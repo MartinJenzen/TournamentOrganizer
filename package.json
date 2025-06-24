@@ -1,0 +1,5 @@
+{
+  "name": "tournament-organizer-app",
+  "private": true,
+  "workspaces": ["frontend", "backend"]
+}
