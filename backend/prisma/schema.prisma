@@ -14,20 +14,117 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Team {
-  id     Int     @id @default(autoincrement())
-  name   String
-  matchesHome Match[] @relation("HomeMatches")
-  matchesAway Match[] @relation("AwayMatches")
+/// A person using the system
+model User {
+  id                Int           @id @default(autoincrement())
+  email             String        @unique
+  password          String
+  username          String?       @unique
+  tournamentsOwned  Tournament[]  @relation("OwnedTournaments") // Tournaments this user owns
+  tournamentInvites Tournament[]  @relation("InvitedUsers")     // Tournaments this user is invited to
 }
 
+/// A tournament (league, group + playoffs, etc.)
+model Tournament {
+  id                Int             @id @default(autoincrement())
+  name              String          @unique
+  ownerId           Int
+  owner             User            @relation("OwnedTournaments", fields: [ownerId], references: [id])
+
+  type              TournamentType
+  matchesPerTeam    Int?            @default(2)   /// Number of matches against each team in league/group stage
+  leagueTeams       Int?            @default(20)  /// Number of teams in league format
+
+  hasGroupStage     Boolean         @default(false)
+  groupStageTeams   Int?            @default(4)   /// Number of teams in each group
+  topTeamsAdvancing Int?            @default(2)   /// Number of teams advancing from group stage to knockout
+  
+  hasKnockoutStage  Boolean         @default(false)
+  knockoutRounds    Int?            @default(1)   /// Number of rounds in play-offs (quater-finals, semi-finals, etc.)
+  knockoutLegs      Int?            @default(1)   /// Number of play-off legs (1 for single-elimination, 2 for double-elimination)
+
+  invitedUsers      User[]          @relation("InvitedUsers")
+  teams             Team[]          @relation("TournamentTeams")
+  matches           Match[]         @relation("TournamentMatches")  
+}
+
+/// Type of tournament
+/// - LEAGUE: Round-robin league format
+/// - KNOCKOUT: Elimination play-off format
+/// - GROUP_STAGE: Group stage with top teams advancing
+/// - CUP: Cup competition with knockout rounds
+enum TournamentType {
+  LEAGUE
+  KNOCKOUT
+  GROUP_STAGE
+  CUP
+}
+
+/// A per-tournament football team
+model Team {
+  id             Int       @id @default(autoincrement())
+  name           String
+  tournament     Tournament @relation("TournamentTeams", fields: [tournamentId], references: [id])
+  tournamentId   Int
+
+  gamesPlayed    Int       @default(0)
+  wins           Int       @default(0)
+  draws          Int       @default(0)
+  losses         Int       @default(0)
+  goalsFor       Int       @default(0)
+  goalsAgainst   Int       @default(0)
+  goalDifference Int       @default(0)
+  points         Int       @default(0)
+  
+  group          String?
+  position       Int?
+
+  players        Player[]
+  homeMatches    Match[]   @relation("HomeMatches")
+  awayMatches    Match[]   @relation("AwayMatches")
+}
+
+/// Indiviual football player on a team
+model Player {
+  id          Int     @id @default(autoincrement())
+  name        String
+  team        Team    @relation(fields: [teamId], references: [id])
+  teamId      Int
+  goals       Int     @default(0)
+  assists     Int     @default(0)
+  matchEvents MatchEvent[]  // MatchEvents this player was involved in (goals/assists)
+}
+
+/// A match in a specific tournament
 model Match {
-  id         Int    @id @default(autoincrement())
-  date       DateTime
-  homeTeam   Team   @relation("HomeMatches", fields: [homeTeamId], references: [id])
-  homeTeamId Int
-  awayTeam   Team   @relation("AwayMatches", fields: [awayTeamId], references: [id])
-  awayTeamId Int
-  homeScore  Int
-  awayScore  Int
+  id             Int        @id @default(autoincrement())
+  date           DateTime   @default(now())
+  tournament     Tournament @relation("TournamentMatches", fields: [tournamentId], references: [id])
+  tournamentId   Int
+
+  homeTeam       Team       @relation("HomeMatches", fields: [homeTeamId], references: [id])
+  homeTeamId     Int
+  awayTeam       Team       @relation("AwayMatches", fields: [awayTeamId], references: [id])
+  awayTeamId     Int
+
+  homeScore      Int
+  awayScore      Int
+
+  events        MatchEvent[]
+}
+
+/// Details of who scored/assisted in a match
+model MatchEvent {
+  id        Int         @id @default(autoincrement())
+  match     Match       @relation(fields: [matchId], references: [id])
+  matchId   Int
+  player    Player      @relation(fields: [playerId], references: [id])
+  playerId  Int
+  type      EventType
+  amount    Int         @default(0) // Number of goals/assists
+}
+
+enum EventType {
+  GOAL
+  ASSIST
 }
