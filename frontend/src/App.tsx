@@ -1,12 +1,16 @@
 import React from 'react';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import NavBar from './components/NavBar';
+import LandingPage from './pages/LandingPage';
 
-function App() {
+export default function App() {
   return (
-    <div>
-      <h1>Tournament Organizer App.</h1>
-    </div>
+    <Router>
+      <NavBar />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        {/* Add more routes as needed */}
+      </Routes>
+    </Router>
   );
 }
-
-export default App;

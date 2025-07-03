@@ -1,0 +1,62 @@
+.modal-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0;
+  width: 100%; 
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 4px;
+  width: 90%; 
+  max-width: 256px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  overflow: hidden;    /* Prevents content overflow */
+  padding: 0rem 1rem 1rem;    /* Top, left/right, bottom */
+}
+
+.modal-body {
+  display: flex;    /* Not needed, but can be used for flexbox layout */
+  flex-direction: column;
+}
+
+.modal-body h2 {
+  margin-bottom: .5rem;
+}
+
+.modal-body input {
+  width: 100%;
+  margin-bottom: .5rem;
+  padding: .5rem;
+  box-sizing: border-box;
+}
+
+.modal-footer {
+  display: flex; 
+  justify-content: flex-end;
+  gap: .5rem;
+}
+
+.modal-btn {
+  cursor: pointer;
+  font-weight: bold;
+  padding: .5rem .5rem;
+}
+
+.modal-btn-confirm {
+  color: #007bff;
+}
+
+.modal-btn-cancel {
+  color: #6c757d;
+}
+
+.modal-btn-danger {
+  color: #dc3545;
+}

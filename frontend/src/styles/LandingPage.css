@@ -1,0 +1,22 @@
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;    /* Full viewport height */
+  text-align: center;
+}
+
+.landing-header h1 {
+  font-size: 3rem;  /* rem is relative to the root font size */
+  margin-bottom: .5rem;
+}
+
+.landing-header p {
+  font-size: 1.25rem;
+  color: #555;
+}
+
+.landing-actions {
+  margin-top: 2rem;
+}
