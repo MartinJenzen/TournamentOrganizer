@@ -23,3 +23,34 @@ Primary Actors:
 
 Secondary Actors:
 - AI Service: assists the users in filling out the match reports through provided photos.
+
+**Example Scenario**
+Alice creates a tournament for the e.g., the European Championship and adds teams like Germany, France, etc. and fills out match reports after each game (consisting of which teams scored how many goals, and which players scored/assisted how many goals). The app. calculates team standings and player stats automatically. Alice can invite Bob to help manage or only view the tournament.
+
+
+Alice...
+1. Selects ‘Cup’ as the tournament format.  
+2. Selects ‘8’ for the number of teams participating.  
+3. Selects ‘2’ for the number of groups.  
+4. Selects ‘2’ for the number of top teams advancing from each group.  
+5. Selects ‘2’ for the number of matches per team in the group stage.  
+6. Selects ‘1’ for the number of legs in the knockout stage (final is always a single match).  
+7. Enters the names of the participating teams (e.g. "Germany", "France", "Denmark", etc.).  
+   - The app. knows the teams from a database and suggests matches as Alice types in.  
+8. Chooses "Denmark" and "Italy" as the human-controlled teams (for Alice and Bob).  
+9. Assigns teams to groups.  
+   - Or she can press **Randomize** to let the app. assign teams (ensuring human-controlled teams don't end up together).  
+10. Presses **Create Tournament** to finalize the setup.  
+11. The system generates the group-stage match schedule and marks any match featuring a human-controlled team as **Pending**.
+12. Alice invites Bob to co-manage the tournament.  
+    - Bob receives a notification for this invitation on the webapp. which he can login to accept or decline.
+13. Alice and Bob play a match and fill out the match report, specifying goals and assists per player.  
+    - AI-controlled matches can be simulated automatically, or Alice can complete reports manually.
+    - Reports can be filled out automatically by an AI service that analyzes photos of the match result.  
+14. The app. updates team standings and player statistics in real-time.
+15. Alice and Bob play all the group stage matches both qualify for the knockout stage.
+16. The app. generates the knockout stage schedule based on group results, and ensures that 2nd place teams face 1st place teams from other groups.
+17. Alice and Bob plays all the knockout matches (semi-finals and finals), filling out match reports as they go.
+18. The app. updates the knockout standings and player stats after each match.
+19. The tournament concludes with a final match, and the app. displays the winner and final standings and stats.
+
