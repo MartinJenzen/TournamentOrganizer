@@ -1,0 +1,35 @@
+/* TODO: remove as no longer needed */
+.create-tournament-container h1 {
+  /* margin-top: 0; */
+}
+
+.create-tournament-form {
+  display: grid;
+  grid-template-columns: 150px 165px;  /* Fixed widths for each column */
+  grid-gap: 1rem;
+  align-items: center;
+  justify-content: start;
+}
+
+.form-group {
+  display: contents;  /* Allows label and input to be placed directly in the grid */
+}
+
+.form-label {
+  grid-column: 1;
+  font-weight: bold;
+  text-align: left;
+  padding-right: 0.5rem;
+}
+
+.form-input {
+  grid-column: 2;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.create-button {
+  grid-column: 2;
+}

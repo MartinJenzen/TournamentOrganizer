@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif; */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+  margin-top: 0;  /* Remove default margin for h1 */
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* TODO: define and align all button layouts in one place */
+
+.primary-btn {
+  padding: .75rem 1.5rem;    /* Vertical and horizontal */
+  background: #007bff;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background-color: ButtonFace;    /* same grey as default hover color */
+}
+
+.secondary-btn {
+  background: transparent;
+  border: 2px solid #007bff;
+  color: #007bff;
+}
+
+.secondary-btn:hover {
+  background: #0056b3;  /* darker blue on hover */
+}

@@ -5,12 +5,12 @@ import { PrismaClient } from '@prisma/client'
 
 const router = Router()
 const prisma = new PrismaClient()
-const JWT_SECRET = process.env.JWT_SECRET!
+const JWT_SECRET = process.env.JWT_SECRET!  // ! asserts that variable is not undefined
 
 // Middleware to check authentication
 // This function checks if any request that requires authentication has a valid JWT token in the cookies
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies.authToken;
+  const token = req.cookies.authToken;    // Extract token from cookies
 
   if (!token)
     return res.status(401).json({ error: 'Not authenticated!' });
@@ -25,8 +25,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+// TODO: better error handling
 // Sign-up endpoint
-router.post('/signup', async (req, res) => {
+router.post('/signup', async (req, res) => {    // TODO: req -> req: Request?
   const { email, password, username } = req.body
   if (!email || !password) 
     return res.status(400).json({ error: 'Email and password are required!' })
@@ -72,6 +73,7 @@ router.post('/signup', async (req, res) => {
   }
 })
 
+// TODO: better error handling
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -111,6 +113,11 @@ router.post('/login', async (req, res) => {
 })
 
 router.post('/logout', (_, res) => {
+
+  res.on('finish', () => {
+    console.log('A user logged out successfully.');
+  });
+
   return res
     .clearCookie('authToken', { 
       sameSite: 'lax', 

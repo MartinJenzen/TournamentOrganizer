@@ -1,10 +1,14 @@
 import React, { Fragment, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import UniversalModal, { ModalMode } from './UniversalModal';
-import { signUp, login } from '../services/authService';
+import { signUp, login, logout } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import '../styles/NavBar.css';
 
 export default function NavBar() {
+  const { user, setUser } = useAuth();
+  const navigate = useNavigate();
+
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>('login');
   const [serverResponse, setServerResponse] = useState<string | null>(null);
@@ -19,21 +23,42 @@ export default function NavBar() {
   // Invoked when user presses a confirming button in the modal (e.g., "Ok", "Sign Up" or "Login")
   const handleConfirm = async (data?: any) => {
     try {
+      let user = null;
+      
       if (modalMode === 'signup') {
-        const user = await signUp(data);
+        user = await signUp(data);
         console.log('Signup successful!', user);
       }
       else if (modalMode === 'login') {
-        const user = await login(data);
+        user = await login(data);
         console.log('Login successful!', user);
       }
+
+      if (user) {
+        setUser(user);
+        navigate('/dashboard');
+      }
     } 
-    catch (err: any) {
-      setServerResponse(err.response?.data?.error ?? err.message);
-      console.error('Error during authentication:', err);
+    catch (error: any) {
+      console.error('Error during authentication:', error);
+      setServerResponse(error.message);
     }
     finally {
       setModalIsOpen(false);
+      setTimeout(() => setServerResponse(null), 3000); // Clear message after 3 sec.
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      setUser(null);
+      await logout();    // Clears cookie on server and in browser
+      navigate('/');
+      console.log('Logout successful.');
+    }
+    catch (error) {
+      console.error('Logout error:', error);
+      setServerResponse('Logout failed. Please try again.');
       setTimeout(() => setServerResponse(null), 3000); // Clear message after 3 sec.
     }
   }
@@ -46,25 +71,38 @@ export default function NavBar() {
         <div className="navbar-title">
           <Link to="/">Tournament Organizer</Link>
         </div>
-
+        
         {/* Buttons */}
         <div className="navbar-buttons">
 
-          {/* Sign Up */}
-          <button
-            onClick={() => openModal('signup')}
-            className="navbar-btn"
-          >
-            Sign Up
-          </button>
+          {user ? (
+            <Fragment>
+              <span className="navbar-username">{user.username || user.email}</span>
+              
+              {/* Logout */}
+              <button onClick={handleLogout} className="navbar-btn">
+                Logout
+              </button>
+            </Fragment>
+          ) : (
+            <Fragment>
+              {/* Sign Up */}
+              <button
+                onClick={() => openModal('signup')}
+                className="navbar-btn"
+              >
+                Sign Up
+              </button>
 
-          {/* Login */}
-          <button
-            onClick={() => openModal('login')}
-            className="navbar-btn navbar-btn-login"
-          >
-            Login
-          </button>
+              {/* Login */}
+              <button
+                onClick={() => openModal('login')}
+                className="navbar-btn navbar-btn-login"
+              >
+                Login
+              </button>
+            </Fragment>
+          )}
 
           {/* About */}
           <button
@@ -81,6 +119,7 @@ export default function NavBar() {
         mode={modalMode}
         onCancel={handleCancel}
         onConfirm={handleConfirm}
+        message={serverResponse ?? undefined}
       />
     </Fragment>
   )

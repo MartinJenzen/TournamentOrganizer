@@ -21,62 +21,73 @@ model User {
   password            String
   username            String?       @unique
   tournamentsOwned    Tournament[]  @relation("OwnedTournaments")     // Tournaments this user owns
-  tournamentInvites   Tournament[]  @relation("InvitedUsers")
+  tournamentInvites   Tournament[]  @relation("InvitedUsers")         // Tournaments this user has been invited to
   tournamentsManaged  Tournament[]  @relation("ManagedTournaments")   // Tournaments this user manages
-  enlistedTournaments Tournament[]  @relation("EnlistedTournaments")  // Tournaments this user is participating in
+  enlistedTournaments Tournament[]  @relation("EnlistedTournaments")  // Tournaments this user is participating (playing) in
   tournamentsWon      Tournament[]  @relation("WonTournaments")       // Tournaments this user has won
   teams               Team[]
 }
 
-  /// A tournament (league, group + playoffs, etc.)
+/// Tournament (league, group & knockout, or cup (knockout only))
 model Tournament {
-  id                Int               @id @default(autoincrement())
-  name              String            @unique
-  ownerId           Int
-  owner             User              @relation("OwnedTournaments", fields: [ownerId], references: [id])
-  coOwners          User[]            @relation("ManagedTournaments")
-  enlistedUsers     User[]            @relation("EnlistedTournaments")
-  status            TournamentStatus  @default(IN_PROGRESS)
+  id                  Int               @id @default(autoincrement())
+  name                String            @unique
+  ownerId             Int
+  owner               User              @relation("OwnedTournaments", fields: [ownerId], references: [id])
+  tournamentManagers  User[]            @relation("ManagedTournaments")
+  invitedUsers        User[]            @relation("InvitedUsers")
+  enlistedUsers       User[]            @relation("EnlistedTournaments")  // Users participating (playing)
+  status              TournamentStatus  @default(IN_PROGRESS)
 
   type              TournamentType
-  matchesPerTeam    Int?              @default(2)   /// Number of matches against each team in league/group stage
-  leagueTeams       Int?              @default(20)  /// Number of teams in league format
+  teamsCount        Int?              @default(0)  // Total number of teams
+  
+  // League and group stage
+  matchesPerTeam    Int?              @default(0)   // Number of matches against each team in league/group stage
 
-  hasGroupStage     Boolean           @default(false)
-  groupStageTeams   Int?              @default(8)   /// Total number of teams in group stage
-  numberOfGroups    Int?              @default(2)   /// Number of groups in group stage
-  topTeamsAdvancing Int?              @default(2)   /// Number of teams advancing from group stage to knockout
+  // Group stage
+  groupsCount       Int?              @default(0)   // Number of groups in group stage
+  topTeamsAdvancing Int?              @default(0)   // Number of top teams advancing from group stage
   groups            Group[]
 
-  hasKnockoutStage  Boolean           @default(false)
-  knockoutRounds    Int?              @default(1)   /// Number of rounds in play-offs (quater-finals, semi-finals, etc.)
-  knockoutLegs      Int?              @default(1)   /// Number of play-off legs (1 for single-elimination, 2 for double-elimination)
+  // Knockout stage
+  knockoutRound     KnockoutRound?                  // Current knockout round (if applicable)
+  knockoutLegs      Int?              @default(0)   // Number of play-off legs (1 for single-elimination, 2 for double-elimination)
 
-  invitedUsers      User[]            @relation("InvitedUsers")
   teams             Team[]            @relation("TournamentTeams")
   matches           Match[]           @relation("TournamentMatches")
+  stage             TournamentStage   @default(LEAGUE_STAGE) // Current stage of the tournament
 
   winnerUser        User?             @relation("WonTournaments", fields: [winnerUserId], references: [id])
   winnerUserId      Int?
   winnerTeam        String?
-
 }
 
-/// Type of tournament
-/// - LEAGUE: Round-robin league format
-/// - GROUP_STAGE: Group stage with top teams advancing
-/// - KNOCKOUT: Elimination play-off format
-/// - CUP: Cup competition (league or group stage with knockout rounds)
+/// Type of tournament format:
 enum TournamentType {
-  LEAGUE      @map("League")
-  GROUP_STAGE @map("Group Stage")
-  KNOCKOUT    @map("Knockout")
-  CUP         @map("Cup")
+  LEAGUE              @map("League")
+  GROUP_AND_KNOCKOUT  @map("Group and Knockout")
+  CUP                 @map("Cup")    // Knockouts only
 }
 
 enum TournamentStatus {
   IN_PROGRESS @map("In Progress")
   COMPLETED   @map("Completed")
+}
+
+enum TournamentStage {
+  LEAGUE_STAGE   @map("League")
+  GROUP_STAGE    @map("Group")
+  KNOCKOUT_STAGE @map("Knockout")
+}
+
+enum KnockoutRound {
+  ROUND_OF_64     @map("Round of 64")
+  ROUND_OF_32     @map("Round of 32")
+  ROUND_OF_16     @map("Round of 16")
+  QUARTER_FINALS  @map("Quarter-finals")
+  SEMI_FINALS     @map("Semi-finals")
+  FINAL           @map("Final")
 }
 
 /// A per-tournament football team
@@ -129,36 +140,23 @@ model Player {
 
 /// A match in a specific tournament
 model Match {
-  id             Int          @id @default(autoincrement())
-  date           DateTime     @default(now())
-  tournament     Tournament   @relation("TournamentMatches", fields: [tournamentId], references: [id])
+  id             Int              @id @default(autoincrement())
+  date           DateTime         @default(now())
+  tournament     Tournament       @relation("TournamentMatches", fields: [tournamentId], references: [id])
   tournamentId   Int
 
-  homeTeam       Team         @relation("HomeMatches", fields: [homeTeamId], references: [id])
+  homeTeam       Team             @relation("HomeMatches", fields: [homeTeamId], references: [id])
   homeTeamId     Int
-  awayTeam       Team         @relation("AwayMatches", fields: [awayTeamId], references: [id])
+  awayTeam       Team             @relation("AwayMatches", fields: [awayTeamId], references: [id])
   awayTeamId     Int
 
-  homeScore      Int
-  awayScore      Int
+  homeScore      Int              @default(0)
+  awayScore      Int              @default(0)
 
-  stageType      StageType    // League play, group stage or play-offs, etc.
+  stage          TournamentStage  // League, group or play-offs, etc.
   knockoutRound  KnockoutRound?
 
-  events         MatchEvent[]
-}
-
-enum StageType {
-  LEAGUE         @map("League")
-  GROUP_STAGE    @map("Group Stage")
-  KNOCKOUT       @map("Knockout")
-}
-
-enum KnockoutRound {
-  ROUND_OF_16     @map("Round of 16")
-  QUARTER_FINALS  @map("Quarter-finals")
-  SEMI_FINALS     @map("Semi-finals")
-  FINAL           @map("Final")
+  events         MatchEvent[]     // Who scored/assisted in this match
 }
 
 /// Details of who scored/assisted in a match

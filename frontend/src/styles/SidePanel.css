@@ -1,0 +1,45 @@
+/* TODO: better naming? */
+.layout {
+  display: flex;
+}
+
+.sidepanel {
+  position: sticky;
+  top: 3.5rem;                 /* adjust to match your NavBar height */
+  left: 0;
+  width: 240px;
+  height: calc(100vh - 3.5rem);
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  padding: 1rem;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+
+/* Main content that takes up the rest of the space */
+.main-content {
+  flex: 1;  /* TODO: needed? */
+  padding: 1rem;
+}
+
+.sidepanel-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: #fff;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.sidepanel-button:hover {
+  background: #0056b3;
+  transform: scale(1.02);
+}
+
+.sidepanel-button:last-child {
+  margin-bottom: 0;
+}
