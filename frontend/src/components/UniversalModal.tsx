@@ -149,20 +149,20 @@ export default function UniversalModal({
         <div className="modal-footer">
           
           {/* Cancel */}
-          <button className="modal-btn modal-btn-cancel" onClick={handleCancel}>
+          <button className="modal-btn cancel" onClick={handleCancel}>
             {mode === 'info' ? 'Close' : 'Cancel'}
           </button>
           
           {/* Login/signup */}
           {(mode === 'login' || mode === 'signup') && (
-            <button className="modal-btn modal-btn-confirm" onClick={handleConfirm}>
+            <button className="modal-btn blue" onClick={handleConfirm}>
               {mode === 'login' ? 'Login' : 'Sign Up'}
             </button>
           )}
           
           {/* Confirmation */}
           {mode === 'confirm' && (
-            <button className="modal-btn modal-btn-confirm" onClick={handleConfirm}>
+            <button className="modal-btn blue" onClick={handleConfirm}>
               OK
             </button>
           )}

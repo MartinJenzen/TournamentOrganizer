@@ -9,9 +9,10 @@
   grid-gap: 1rem;
   align-items: center;
   justify-content: start;
+  margin-left: .5rem;
 }
 
-.form-group {
+.form-label-and-input {
   display: contents;  /* Allows label and input to be placed directly in the grid */
 }
 

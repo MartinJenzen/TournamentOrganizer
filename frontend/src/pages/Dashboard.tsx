@@ -1,7 +1,13 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useTournamentDetails } from '../context/TournamentContext';
 import '../styles/Dashboard.css'
 
 export default function Dashboard() {
+  const { resetTournament } = useTournamentDetails();
+
+  useEffect(() => {
+    resetTournament();
+  }, [resetTournament]);
 
   return (
     <div>

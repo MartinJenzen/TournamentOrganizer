@@ -1,9 +1,10 @@
 import React from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import '../styles/SidePanel.css';
-import { Outlet, useNavigate } from 'react-router-dom'
 
 export default function SidePanel() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   return (
     // TODO: better naming than layout?
@@ -11,23 +12,26 @@ export default function SidePanel() {
       <aside className="sidepanel">
 
         {/* Create Tournament */}
-        <button className="sidepanel-button" onClick={() => navigate('/create-tournament')}>
-          Create New Tournament
+        <button className="sidepanel-button blue" onClick={() => navigate('/create-tournament')}>
+          Create Tournament
         </button>
 
         {/* Load Tournament */}
-        <button className="sidepanel-button" onClick={() => console.log('Load Tournament')}>
+        <button className="sidepanel-button blue" onClick={() => console.log('Load Tournament')}>
           Load Tournament
         </button>
 
         {/* Invitations */}
-        <button className="sidepanel-button" onClick={() => console.log('Invitations')}>
+        <button className="sidepanel-button blue" onClick={() => console.log('Invitations')}>
           Invitations
         </button>
 
         {/* Return */}
-        {/* TODO: remove ability to return to LandingPage */}
-        <button className="sidepanel-button" onClick={() => window.history.back()}>
+        <button
+          className="sidepanel-button blue"
+          disabled={pathname === '/dashboard'}
+          onClick={() => navigate(-1)}
+        >
           Return
         </button>
       </aside>

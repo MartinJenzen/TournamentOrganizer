@@ -80,7 +80,7 @@ export default function NavBar() {
               <span className="navbar-username">{user.username || user.email}</span>
               
               {/* Logout */}
-              <button onClick={handleLogout} className="navbar-btn">
+              <button onClick={handleLogout} className="transparent">
                 Logout
               </button>
             </Fragment>
@@ -89,7 +89,7 @@ export default function NavBar() {
               {/* Sign Up */}
               <button
                 onClick={() => openModal('signup')}
-                className="navbar-btn"
+                className="blue"
               >
                 Sign Up
               </button>
@@ -97,7 +97,7 @@ export default function NavBar() {
               {/* Login */}
               <button
                 onClick={() => openModal('login')}
-                className="navbar-btn navbar-btn-login"
+                className="transparent"
               >
                 Login
               </button>
@@ -107,7 +107,7 @@ export default function NavBar() {
           {/* About */}
           <button
             onClick={() => openModal('info')}
-            className="navbar-btn navbar-btn-login"
+            className="transparent"
           >
             About
           </button>

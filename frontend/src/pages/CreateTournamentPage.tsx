@@ -1,18 +1,37 @@
 import React, { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTournamentDetails } from '../context/TournamentContext';
 import '../styles/CreateTournamentPage.css';
 
+// TODO: rename to TournamentSetupPage
 export default function CreateTournamentPage() {
-  const [tournamentName, setTournamentName] = useState('');
-  const [tournamentType, setTournamentType] = useState('LEAGUE');
-  const [teamsCount, setTeamsCount] = useState(8);
-  const [matchesPerTeam, setMatchesPerTeam] = useState(2);
-  const [teamsPerGroupOptions, setTeamsPerGroupOptions] = useState([2, 4, 8]);
-  const [teamsPerGroup, setTeamsPerGroup] = useState(4);
-  const [groupsCount, setGroupsCount] = useState(2);
-  const [teamsAdvancingPerGroup, setTeamsAdvancingPerGroup] = useState(2);
-  const [knockoutLegs, setKnockoutLegs] = useState(1);
   const navigate = useNavigate();
+  const { tournamentDetails, setTournamentDetails } = useTournamentDetails();
+
+  const [tournamentName, setTournamentName]                 = useState(tournamentDetails.tournamentName);
+  const [tournamentType, setTournamentType]                 = useState(tournamentDetails.tournamentType);
+  const [teamsCount, setTeamsCount]                         = useState(tournamentDetails.teamsCount);
+  const [matchesPerTeam, setMatchesPerTeam]                 = useState(tournamentDetails.matchesPerTeam);
+  const [teamsPerGroup, setTeamsPerGroup]                   = useState(tournamentDetails.teamsPerGroup);
+  const [groupsCount, setGroupsCount]                       = useState(tournamentDetails.groupsCount);
+  const [teamsAdvancingPerGroup, setTeamsAdvancingPerGroup] = useState(tournamentDetails.teamsAdvancingPerGroup);
+  const [knockoutLegs, setKnockoutLegs]                     = useState(tournamentDetails.knockoutLegs);
+  
+  const [teamsPerGroupOptions, setTeamsPerGroupOptions]     = useState([2, 4, 8]);
+
+  // Repopulate the form fields upon return to page
+  useEffect(() => {
+    if (tournamentDetails) {
+      setTournamentName(tournamentDetails.tournamentName);
+      setTournamentType(tournamentDetails.tournamentType);
+      setTeamsCount(tournamentDetails.teamsCount);
+      setMatchesPerTeam(tournamentDetails.matchesPerTeam);
+      setTeamsPerGroup(tournamentDetails.teamsPerGroup);
+      setGroupsCount(tournamentDetails.groupsCount);
+      setTeamsAdvancingPerGroup(tournamentDetails.teamsAdvancingPerGroup);
+      setKnockoutLegs(tournamentDetails.knockoutLegs);
+    }
+  }, [tournamentDetails]);
 
   // Different options for total number of teams, based on tournament type
   const teamsCountOptions = useMemo(() => {
@@ -30,11 +49,11 @@ export default function CreateTournamentPage() {
     
   }, [tournamentType]);
   
-  // Reset teamsCount from the proper range when tournament type changes
+  // Reset teamsCount from the proper range when tournamentType changes
   useEffect(() => {
-    if (!teamsCountOptions.includes(teamsCount)) {
+    if (!teamsCountOptions.includes(teamsCount)) 
       setTeamsCount(teamsCountOptions[0]);
-    }
+
   }, [tournamentType, teamsCount, teamsCountOptions]);
 
   // Compute possible number of teams per group whenever teamsCount changes
@@ -49,13 +68,15 @@ export default function CreateTournamentPage() {
 
       setTeamsPerGroupOptions(options);
       console.log('Teams per group options:', options); // TODO: REMOVE
-
-      // Reset teamsPerGroup if the current teamsPerGroup value is no longer valid
-      if (!options.includes(teamsPerGroup)) {
-        setTeamsPerGroup(options[0]);
-      }
     }
-  }, [teamsCount, teamsPerGroup, tournamentType]);
+    }, [teamsCount, teamsPerGroup, tournamentType]);
+    
+  // Reset teamsPerGroup if the current teamsPerGroup value is no longer valid
+  useEffect(() => {
+    if (tournamentType === 'GROUP_AND_KNOCKOUT' && !teamsPerGroupOptions.includes(teamsPerGroup))
+      setTeamsPerGroup(teamsPerGroupOptions[0]);
+    
+  }, [tournamentType, teamsPerGroup, teamsPerGroupOptions]);
 
   // Compute number of groups based on teamsCount and teamsPerGroup
   useEffect(() => {
@@ -74,7 +95,8 @@ export default function CreateTournamentPage() {
     event.preventDefault();    // Prevent the default form submission behavior
 
     // Redirect to the SelectTeamsPage with the tournament details
-    const tournamentDetails = {
+    setTournamentDetails({
+      ...tournamentDetails,   // Spread previous tournamentDetails into new object
       tournamentName,
       tournamentType,
       teamsCount,
@@ -83,12 +105,12 @@ export default function CreateTournamentPage() {
       teamsPerGroup:          (tournamentType === 'LEAGUE' || tournamentType === 'CUP') ? 0 : teamsPerGroup,
       teamsAdvancingPerGroup: (tournamentType === 'LEAGUE' || tournamentType === 'CUP') ? 0 : teamsAdvancingPerGroup,
       knockoutLegs:            tournamentType === 'LEAGUE' ? 0 : knockoutLegs,
-    };
+    });
 
     console.log('Tournament Details:', tournamentDetails); // TODO: REMOVE
 
     // Redirect to the SelectTeamsPage with the tournament details
-    navigate('/select-teams', { state: { tournamentDetails } });
+    navigate('/select-teams');
   };
 
   return (
@@ -98,7 +120,7 @@ export default function CreateTournamentPage() {
       <form onSubmit={handleSubmit} className="create-tournament-form">
 
         {/* Tournament name */}
-        <div className="form-group">
+        <div className="form-label-and-input">
           <label className="form-label" htmlFor="tournamentName">Tournament Name</label>
           <input
             className="form-input"
@@ -111,13 +133,13 @@ export default function CreateTournamentPage() {
         </div>
 
         {/* Tournament type */}
-        <div className="form-group">
+        <div className="form-label-and-input">
           <label className="form-label" htmlFor="tournamentType">Tournament Type</label>
           <select
             id="tournamentType"
             className="form-input"
             value={tournamentType}
-            onChange={(event) => setTournamentType(event.target.value)}
+            onChange={(event) => setTournamentType(event.target.value as 'LEAGUE' | 'GROUP_AND_KNOCKOUT' | 'CUP')}
           >
             <option value="LEAGUE">League</option>
             <option value="GROUP_AND_KNOCKOUT">Group and Knockout</option>
@@ -126,7 +148,7 @@ export default function CreateTournamentPage() {
         </div>
 
         {/* Total number of teams */}
-        <div className="form-group">
+        <div className="form-label-and-input">
           <label className="form-label" htmlFor="teamsCount">Number of Teams</label>
           <select
             id="teamsCount"
@@ -147,7 +169,7 @@ export default function CreateTournamentPage() {
         {(tournamentType === 'LEAGUE' || tournamentType === 'GROUP_AND_KNOCKOUT') && (
           
           // Number of league/group matches (legs) per team
-          <div className="form-group">
+          <div className="form-label-and-input">
 
             {/* League Legs */}
             {tournamentType === 'LEAGUE' && (
@@ -177,7 +199,7 @@ export default function CreateTournamentPage() {
           
           <Fragment>
             {/* Number of teams per group */}
-            <div className="form-group">
+            <div className="form-label-and-input">
               <label className="form-label" htmlFor="teamsPerGroup">Teams Per Group</label>
               <select
                 id="teamsPerGroup"
@@ -195,7 +217,7 @@ export default function CreateTournamentPage() {
             </div>
 
             {/* Number of top teams advancing per group */}
-            <div className="form-group">
+            <div className="form-label-and-input">
               <label className="form-label" htmlFor="teamsAdvancing">Teams Advancing</label>
               <select
                 id="teamsAdvancing"
@@ -215,7 +237,7 @@ export default function CreateTournamentPage() {
         {(tournamentType === 'CUP' || tournamentType === 'GROUP_AND_KNOCKOUT') && (
           
           // Number of knockout matches
-          <div className="form-group">
+          <div className="form-label-and-input">
             <label className="form-label" htmlFor="knockoutLegs">Knockout Legs</label>
             <select
               id="knockoutLegs"
@@ -231,8 +253,9 @@ export default function CreateTournamentPage() {
 
         )}
 
-        {/* Create button */}
-        <button className="primary-btn create-button" type="submit">
+        {/* Select Teams button */}
+        {/* TODO: add right chevron? */}
+        <button className="create-button blue" type="submit">
           Select Teams
         </button>
       </form>

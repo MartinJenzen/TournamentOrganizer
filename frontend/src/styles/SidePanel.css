@@ -8,6 +8,7 @@
   top: 3.5rem;                 /* adjust to match your NavBar height */
   left: 0;
   width: 240px;
+  min-width: 240px;
   height: calc(100vh - 3.5rem);
   background: #fff;
   border-right: 1px solid #e0e0e0;
@@ -25,18 +26,12 @@
   display: block;
   width: 100%;
   margin-bottom: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  background: #007bff;
-  color: #fff;
-  border-radius: 4px;
   text-align: left;
   font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
 }
 
+/* TODO: remove? */
 .sidepanel-button:hover {
-  background: #0056b3;
   transform: scale(1.02);
 }
 

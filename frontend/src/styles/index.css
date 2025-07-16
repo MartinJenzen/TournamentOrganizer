@@ -1,3 +1,4 @@
+/* TODO: define and align all default layouts in one place other than here? */
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -13,35 +14,50 @@ h1 {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 button {
+  padding: .75rem 1.5rem; 
   font-family: inherit;
-}
-
-/* TODO: define and align all button layouts in one place */
-
-.primary-btn {
-  padding: .75rem 1.5rem;    /* Vertical and horizontal */
-  background: #007bff;
-  color: #fff;
-  text-decoration: none;
   border-radius: 4px;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.primary-btn:hover {
-  background-color: ButtonFace;    /* same grey as default hover color */
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;   /* Prevents button changing color/size on hover */
 }
 
-.secondary-btn {
+select {
+  cursor: pointer;
+}
+
+.transparent {
   background: transparent;
   border: 2px solid #007bff;
   color: #007bff;
 }
 
-.secondary-btn:hover {
-  background: #0056b3;  /* darker blue on hover */
+.transparent:hover {
+  background-color: ButtonFace;    /* Same grey as default hover color */
+}
+
+.blue {
+  background: #007bff;
+  color: #fff;
+}
+
+.blue:hover {
+  background: #0056b3;
+}
+
+.cancel {
+  color: #6c757d;
+}
+
+.danger {
+  color: #dc3545;
 }
