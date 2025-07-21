@@ -1,0 +1,119 @@
+.buttons-container {
+  display: flex;
+  flex-direction: row;
+  gap: .5rem;
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+} 
+
+.control-button {
+  width: 128px;
+  padding: 0.5rem 1rem;
+  border: 1px solid #999;
+  background-color: #f0f0f0;
+  box-sizing: border-box;
+}
+
+/* TODO: standardize themes one place */
+.create-tournament {
+  background-color: #007bff;
+  color: white;
+  border: 1px solid #999;
+  width: 146px;
+}
+
+.groups-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0 auto;
+  justify-content: left;
+}
+
+.group {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border-radius: 8px;
+  border: 2px solid #444;
+  overflow: hidden;
+  max-width: 256px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  flex: 0 0 280px;
+}
+
+.group:hover {
+  border-color: #28a745;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+}
+
+/* Group header */
+.group h2 {
+  background: linear-gradient(90deg, #0056b3, #007bff);
+  color: white;
+  margin: 0;
+  padding: .25rem;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+/* Teams list */
+.group ul {
+  list-style: none;
+  padding: 16px;
+  margin: 0;
+}
+
+.group li {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  border-left: 4px solid #ff6b35;
+  font-weight: 500;
+  cursor: grab;
+}
+
+.group li[draggable="true"]:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  border-left-color: #28a745;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.group li:active {
+  cursor: grabbing;
+}
+
+/* Remove bottom margin from last team in each group */
+.group li:last-child {
+  margin-bottom: 0;
+}
+
+/* Source team selected to be dragged away */
+.group li.source-team {
+  opacity: .5;
+}
+
+/* Target team to be swapped with source team  */
+.group li.target-team {
+  background: rgba(255, 193, 7, 0.3);
+  border-left-color: #ffc107;
+  box-shadow: 0 0 12px rgba(255, 193, 7, 0.6);
+  transform: scale(1.02);
+}
+
+/* Source team actively being dragged */
+.dragged-team {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+  position: absolute;
+  z-index: 1000;  /* Needed to ensure the dragged element is above others */
+  opacity: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}

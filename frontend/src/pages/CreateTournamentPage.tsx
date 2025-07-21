@@ -95,7 +95,7 @@ export default function CreateTournamentPage() {
     event.preventDefault();    // Prevent the default form submission behavior
 
     // Redirect to the SelectTeamsPage with the tournament details
-    setTournamentDetails({
+    const newTournamentDetails = {
       ...tournamentDetails,   // Spread previous tournamentDetails into new object
       tournamentName,
       tournamentType,
@@ -105,9 +105,10 @@ export default function CreateTournamentPage() {
       teamsPerGroup:          (tournamentType === 'LEAGUE' || tournamentType === 'CUP') ? 0 : teamsPerGroup,
       teamsAdvancingPerGroup: (tournamentType === 'LEAGUE' || tournamentType === 'CUP') ? 0 : teamsAdvancingPerGroup,
       knockoutLegs:            tournamentType === 'LEAGUE' ? 0 : knockoutLegs,
-    });
+    };
 
-    console.log('Tournament Details:', tournamentDetails); // TODO: REMOVE
+    setTournamentDetails(newTournamentDetails);
+    console.log('Tournament Details:', newTournamentDetails); // TODO: REMOVE
 
     // Redirect to the SelectTeamsPage with the tournament details
     navigate('/select-teams');

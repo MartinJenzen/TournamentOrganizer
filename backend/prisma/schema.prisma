@@ -31,13 +31,15 @@ model User {
 /// Tournament (league, group & knockout, or cup (knockout only))
 model Tournament {
   id                  Int               @id @default(autoincrement())
-  name                String            @unique
+  name                String
   ownerId             Int
   owner               User              @relation("OwnedTournaments", fields: [ownerId], references: [id])
   tournamentManagers  User[]            @relation("ManagedTournaments")
   invitedUsers        User[]            @relation("InvitedUsers")
   enlistedUsers       User[]            @relation("EnlistedTournaments")  // Users participating (playing)
   status              TournamentStatus  @default(IN_PROGRESS)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now()) @updatedAt
 
   type              TournamentType
   teamsCount        Int?              @default(0)  // Total number of teams
@@ -47,8 +49,9 @@ model Tournament {
 
   // Group stage
   groupsCount       Int?              @default(0)   // Number of groups in group stage
+  teamsPerGroup     Int?              @default(0)   // Number of teams in each group
   topTeamsAdvancing Int?              @default(0)   // Number of top teams advancing from group stage
-  groups            Group[]
+  groups            Group[]                         // Virtual field (no column created)
 
   // Knockout stage
   knockoutRound     KnockoutRound?                  // Current knockout round (if applicable)
@@ -124,7 +127,7 @@ model Group {
   tournament    Tournament  @relation(fields: [tournamentId], references: [id])
   tournamentId  Int
 
-  teams         Team[]
+  teams         Team[]      // Virtual field (no column created)
 }
 
 /// Individual football player on a team

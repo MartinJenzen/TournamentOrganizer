@@ -32,14 +32,24 @@ export default function SelectTeamsPage() {
     setCheckedAvailableTeams([]);
     setCheckedSelectedTeams([]);
   }, [selectedLeague, selectedTeams]);
-
+      
   // Update tournament details when selectedTeams change
   useEffect(() => {
-    setTournamentDetails(prev => ({
-      ...prev,         // Spread previous tournamentDetails into new object
-      selectedTeams    // And merge in new selectedTeams
-    }));
+    const updatedTournament = { ...tournamentDetails, selectedTeams };
+    setTournamentDetails(updatedTournament);
   }, [selectedTeams, setTournamentDetails]);
+
+  // Trim selected teams if maxTeams changes
+  useEffect(() => {
+    if (selectedTeams.length > maxTeams) {
+      setSelectedTeams(selectedTeams.slice(0, maxTeams));
+    }
+  }, [maxTeams, selectedTeams.length]);
+
+  // TODO: remove
+  useEffect(() => {
+    console.log('Selected Teams:', selectedTeams);
+  }, [selectedTeams]);
 
   // Toggle checkbox for team in availableTeams list
   const toggleAvailableTeamCheckbox = (teamToToggle: string) => {
@@ -61,7 +71,7 @@ export default function SelectTeamsPage() {
   const handleAddTeams = () => {
     if (checkedAvailableTeams.length) {
       setAvailableTeams(availableTeams.filter(team => !checkedAvailableTeams.includes(team)));
-      setSelectedTeams([...selectedTeams, ...checkedAvailableTeams]);
+      setSelectedTeams(selectedTeams => [...selectedTeams, ...checkedAvailableTeams].sort((a, b) => a.localeCompare(b)));
       setCheckedAvailableTeams([]);
     }
   };
@@ -77,7 +87,7 @@ export default function SelectTeamsPage() {
 
   // Add all available teams to selectedTeams list
   const handleAddAllTeams = () => {
-    setSelectedTeams([...selectedTeams, ...availableTeams]);
+    setSelectedTeams(selectedTeams => [...selectedTeams, ...availableTeams].sort((a, b) => a.localeCompare(b)));
     setAvailableTeams([]);
   };
 
@@ -85,6 +95,24 @@ export default function SelectTeamsPage() {
   const handleRemoveAllTeams = () => {
     setAvailableTeams([...availableTeams, ...selectedTeams]);
     setSelectedTeams([]);
+  };
+
+  // Fill selectedTeams with random teams from availableTeams until maxTeams is reached
+  const handleFillAutomatically = () => {
+    const teamsNeeded = maxTeams - selectedTeams.length;
+    if (teamsNeeded <= 0) 
+      return;
+
+    const remainingAvailableTeams = [...availableTeams];
+    const teamsToAdd: string[] = [];
+
+    while (teamsToAdd.length < teamsNeeded && remainingAvailableTeams.length > 0) {
+      const randomTeamIndex = Math.floor(Math.random() * remainingAvailableTeams.length);
+      teamsToAdd.push(remainingAvailableTeams.splice(randomTeamIndex, 1)[0]);
+    }
+
+    setSelectedTeams(selectedTeams => [...selectedTeams, ...teamsToAdd].sort((a, b) => a.localeCompare(b)));
+    setAvailableTeams(remainingAvailableTeams);
   };
 
   return (
@@ -169,6 +197,15 @@ export default function SelectTeamsPage() {
             &lt;&lt; Remove All
           </button>
 
+          {/* Fill automatically */}
+          <button
+            onClick={handleFillAutomatically}
+            className="middle-button"
+            disabled={selectedTeams.length >= maxTeams || availableTeams.length === 0}
+          >
+            Auto-fill
+          </button>
+
           {/* Settings (go back to CreateTournamentPage) */}
           <button 
             className="middle-button" 
@@ -181,7 +218,7 @@ export default function SelectTeamsPage() {
           <button 
             className="middle-button continue"
             disabled={!(selectedTeams.length === maxTeams)}
-            onClick={() => navigate('/create-tournament')}
+            onClick={() => navigate('/organize-teams')}
           >
             Continue
           </button>

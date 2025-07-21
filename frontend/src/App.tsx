@@ -8,6 +8,8 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import CreateTournamentPage from './pages/CreateTournamentPage';
 import SelectTeamsPage from './pages/SelectTeamsPage';
+import OrganizeTeamsPage from './pages/OrganizeTeamsPage';
+import TournamentPage from './pages/TournamentPage';
 
 export default function App() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/create-tournament" element={<CreateTournamentPage />} />
                 <Route path="/select-teams" element={<SelectTeamsPage />} />
+                <Route path="/organize-teams" element={<OrganizeTeamsPage />} />
+                <Route path="/tournament-page" element={<TournamentPage />} />
               </Route>
           </Routes>
         </Router>

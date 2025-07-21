@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 
 export interface TournamentDetails {
+  id?: number;
+  createdAt?: string;
+  updatedAt?: string; 
   tournamentName: string;
   tournamentType: 'LEAGUE' | 'GROUP_AND_KNOCKOUT' | 'CUP';
   teamsCount: number;
@@ -10,6 +13,7 @@ export interface TournamentDetails {
   teamsAdvancingPerGroup: number;
   knockoutLegs: number;
   selectedTeams: string[];
+  groups?: Record<string, string[]>;
 }
 
 interface ContextShape {
@@ -27,7 +31,8 @@ const defaultTournamentDetails: TournamentDetails = {
   groupsCount: 2,
   teamsAdvancingPerGroup: 2,
   knockoutLegs: 1,
-  selectedTeams: []
+  selectedTeams: [],
+  groups: {}
 };
 
 const TournamentContext = createContext<ContextShape>({

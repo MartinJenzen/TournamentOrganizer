@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from 'react'
+import React, { Fragment, useEffect, useState, useRef } from 'react'
 import '../styles/UniversalModal.css'
 
 export type ModalMode = 'login' | 'signup' | 'confirm' | 'info'
@@ -25,24 +25,25 @@ export type ModalProps = {
  ** onConfirm:  callback invoked with form data or undefined
  ** onCancel:   callback invoked when the user cancels or closes
  */
-export default function UniversalModal({
-  isOpen,
-  mode,
-  message,
-  onConfirm,
-  onCancel,
-}: ModalProps) {
+export default function UniversalModal({ isOpen, mode, message, onConfirm, onCancel }: ModalProps) {
   
   const initialForm = { email: '', password: '', username: '' }
-  // State to manage form inputs for login/signup modes
-  const [form, setForm] = useState(initialForm)
+  const firstInputFieldRef = useRef<HTMLInputElement>(null);
 
-  // Clear out the form whenever isOpen flips to false
-  // This ensures the form is reset when the modal closes
+  // State to manage form inputs for login/signup modes
+  const [form, setForm] = useState(initialForm);
+
+  // Clear form when modal closes
   useEffect(() => {
     if (!isOpen) 
       setForm(initialForm)
   }, [isOpen])
+
+  // Focus first input field when modal opens in login/signup mode
+  useEffect(() => {
+    if (isOpen && (mode === 'login' || mode === 'signup'))
+      firstInputFieldRef.current?.focus();
+  }, [isOpen, mode])
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Update form state with input values
@@ -61,7 +62,16 @@ export default function UniversalModal({
         ? form
         : undefined
     )
-    setForm(initialForm)
+
+    // Reset form after short delay
+    setTimeout(() => setForm(initialForm), 1000) 
+  }
+
+  const handleEnterKey = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && (mode === 'login' || mode === 'signup')) {
+      event.preventDefault();
+      handleConfirm();
+    }
   }
 
   // Render nothing if modal is not open
@@ -70,7 +80,11 @@ export default function UniversalModal({
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>  {/* Prevents misclicks inside modal from closing it */}
+      <div 
+        className="modal-content" 
+        onClick={event => event.stopPropagation()} // Prevents misclicks inside modal from closing it
+        onKeyDown={handleEnterKey}
+      >  
         <div className="modal-body">
           
           {/* Login Modal */}
@@ -82,6 +96,7 @@ export default function UniversalModal({
               
               {/* Email */}
               <input
+                ref={firstInputFieldRef}
                 name="email"
                 type="email"
                 value={form.email}
@@ -109,6 +124,7 @@ export default function UniversalModal({
 
               {/* Username */}
               <input
+                ref={firstInputFieldRef}
                 name="username"
                 type="text"
                 value={form.username}
