@@ -1,0 +1,77 @@
+/* TODO: CLEAN UP! */
+
+.table-container {
+  /* width: 512px; */
+  /* margin: 1rem 0; */
+  border-radius: 4px;
+  overflow: hidden;
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); */
+  border: 1px solid #dee2e6;
+  background: #e9ecef;
+  margin-bottom: 1rem;
+  /* margin-top: 1rem; */
+}
+
+.table-name {
+  /* background: #f8f9fa; */
+  background: #e9ecef;
+  margin: 0;
+  padding: 0.5rem;
+  /* border-bottom: 1px solid #dee2e6; */
+  margin-left: .25rem;
+  /* width: 200px; */
+}
+
+.standings-table {
+  border-collapse: collapse;
+  background: white;
+}
+
+.standings-table th {
+  background: #e9ecef;
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.standings-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.position-column { 
+  min-width: 1.2rem;
+}
+
+.stat-column { 
+  min-width: 2rem;
+}
+
+.header {
+  border-left: 4px solid #e9ecef;
+}
+
+.team-column { 
+  width: 10rem; 
+  min-width: 10rem;
+} 
+
+.team-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-row {
+  border-left: 4px solid white;    /*TODO: decide between #ff0008, #EA4335 (Google), white or dc3545 (danger)*/
+}
+
+.team-row.qualified {
+  border-left: 4px solid #007bff;
+}
+
+.team-row:hover {
+  background-color: #f8f9fa;
+}

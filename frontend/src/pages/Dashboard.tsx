@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react'
-import { useTournamentDetails } from '../context/TournamentContext';
+import { useTournamentContext } from '../context/TournamentContext';
 import '../styles/Dashboard.css'
 
 export default function Dashboard() {
-  const { resetTournament } = useTournamentDetails();
+  const { resetTournament } = useTournamentContext();
 
   useEffect(() => {
     resetTournament();

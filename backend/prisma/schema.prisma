@@ -144,10 +144,11 @@ model Player {
 /// A match in a specific tournament
 model Match {
   id             Int              @id @default(autoincrement())
-  date           DateTime         @default(now())
   tournament     Tournament       @relation("TournamentMatches", fields: [tournamentId], references: [id])
   tournamentId   Int
 
+  played         Boolean          @default(false)    // Whether the match has been played
+  matchDay       Int              @default(0)
   homeTeam       Team             @relation("HomeMatches", fields: [homeTeamId], references: [id])
   homeTeamId     Int
   awayTeam       Team             @relation("AwayMatches", fields: [awayTeamId], references: [id])

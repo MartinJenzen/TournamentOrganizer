@@ -1,0 +1,224 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 4rem 1rem 2rem;
+  z-index: 1000;
+}
+
+.match-report-modal-content {
+  background: #fff;
+  width: min(100%, 900px);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  padding: 1.25rem 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeIn .15s ease;
+  font-size: 0.9rem;
+}
+
+/* Header */
+.match-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.match-report-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: .25rem .5rem;
+  color: #444;
+}
+.close-btn:hover { color: #000; }
+
+.score-summary {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  background: #f5f7fa;
+  padding: .6rem .9rem;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.score-summary .home-team {
+  justify-self: end;
+  text-align: right;
+}
+
+.score-summary .away-team {
+  justify-self: start;
+  text-align: left;
+}
+
+.home-score-input {
+  padding: .35rem .4rem;
+  border: 1px solid #cdd2d7;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  direction: rtl;
+}
+
+.away-score-input {
+  padding: .35rem .4rem;
+  border: 1px solid #cdd2d7;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Team sections */
+.match-events {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Responsive */
+@media (max-width: 760px) {
+  .match-events { grid-template-columns: 1fr; }
+}
+
+.team-container {
+  background: #f8f9fb;
+  padding: .75rem .75rem .9rem;
+  border: 1px solid #e2e6ea;
+  border-radius: 8px;
+}
+
+.team-container h4 {
+  text-align: center;
+  margin: 0 0 .55rem;
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: #333;
+}
+
+.player-entry {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px 32px;
+  gap: .4rem;
+  margin-bottom: .35rem;
+}
+
+.player-entry .column-label {
+  font-weight: 600;
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #555;
+  user-select: none;
+  margin-left: 0.4rem;
+}
+
+.player-name-input,
+.goals-input,
+.assists-input {
+  padding: .35rem .4rem;
+  border: 1px solid #cdd2d7;
+  border-radius: 4px;
+  font-size: .75rem;
+  min-width: 0;
+}
+
+.home-score-input:focus,
+.away-score-input:focus,
+.player-name-input:focus,
+.goals-input:focus,
+.assists-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,.15);
+}
+
+/* Add and remove buttons */
+.add-player-entry-btn,
+.remove-player-entry-btn {
+  cursor: pointer;
+  border: 1px solid #cdd2d7;
+  background: #fff;
+  border-radius: 4px;
+  font-size: .75rem;
+  padding: .35rem .5rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+
+.add-player-entry-btn {
+  width: 100%;
+  margin-top: .4rem;
+  background: #eef2f6;
+  border-color: #d0d6dc;
+  font-weight: 500;
+}
+.add-player-entry-btn:hover {
+  background: #e3e9ef;
+}
+
+.remove-player-entry-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.remove-player-entry-btn:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.match-report-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-top: .25rem;
+}
+
+.match-report-footer button {
+  cursor: pointer;
+  padding: .55rem .9rem;
+  font-size: .8rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  transition: background .15s;
+}
+
+.match-report-footer .secondary {
+  background: #eef1f4;
+  color: #333;
+  border-color: #d5d9de;
+}
+.match-report-footer .secondary:hover {
+  background: #e3e7ea;
+}
+
+.match-report-footer .primary {
+  background: #2563eb;
+  color: #fff;
+}
+.match-report-footer .primary:hover {
+  background: #1d53c6;
+}

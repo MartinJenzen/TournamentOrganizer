@@ -10,6 +10,7 @@ import CreateTournamentPage from './pages/CreateTournamentPage';
 import SelectTeamsPage from './pages/SelectTeamsPage';
 import OrganizeTeamsPage from './pages/OrganizeTeamsPage';
 import TournamentPage from './pages/TournamentPage';
+import LoadTournamentPage from './pages/LoadTournamentPage';
 
 export default function App() {
   return (
@@ -27,7 +28,8 @@ export default function App() {
                 <Route path="/create-tournament" element={<CreateTournamentPage />} />
                 <Route path="/select-teams" element={<SelectTeamsPage />} />
                 <Route path="/organize-teams" element={<OrganizeTeamsPage />} />
-                <Route path="/tournament-page" element={<TournamentPage />} />
+                <Route path="/tournament" element={<TournamentPage />} />
+                <Route path="/load-tournament" element={<LoadTournamentPage />} />
               </Route>
           </Routes>
         </Router>

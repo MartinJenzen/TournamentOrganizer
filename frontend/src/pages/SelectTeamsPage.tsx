@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { leagues } from '../data/leagues';
-import { useTournamentDetails } from '../context/TournamentContext';
+import { useTournamentContext } from '../context/TournamentContext';
 import '../styles/SelectTeamsPage.css';
 
 export default function SelectTeamsPage() {
   const navigate = useNavigate();
-  const { tournamentDetails, setTournamentDetails } = useTournamentDetails();
+  const { tournamentConfig, setTournamentConfig } = useTournamentContext();
 
   const [selectedLeague, setSelectedLeague] = useState("Bundesliga");
   const [availableTeams, setAvailableTeams] = useState<string[]>(() =>
     leagues[selectedLeague].filter(
-      // Filter out teams already selected in tournamentDetails
-      team => !(tournamentDetails.selectedTeams).includes(team)
+      // Filter out teams already selected in tournamentConfig
+      team => !(tournamentConfig.selectedTeams).includes(team)
     )
   );
-  const [selectedTeams, setSelectedTeams] = useState(tournamentDetails.selectedTeams);
+  const [selectedTeams, setSelectedTeams] = useState(tournamentConfig.selectedTeams);
 
   // States for checkboxes: store names of teams that are checked in each list.
   const [checkedAvailableTeams, setCheckedAvailableTeams] = useState<string[]>([]);
   const [checkedSelectedTeams, setCheckedSelectedTeams] = useState<string[]>([]);
 
   // Maximum number of teams allowed to select
-  const maxTeams = tournamentDetails.teamsCount;
+  const maxTeams = tournamentConfig.teamsCount;
 
   // Update available teams and clear any checked items when selected league changes
   useEffect(() => {
@@ -35,9 +35,9 @@ export default function SelectTeamsPage() {
       
   // Update tournament details when selectedTeams change
   useEffect(() => {
-    const updatedTournament = { ...tournamentDetails, selectedTeams };
-    setTournamentDetails(updatedTournament);
-  }, [selectedTeams, setTournamentDetails]);
+    const updatedTournamentConfig = { ...tournamentConfig, selectedTeams };
+    setTournamentConfig(updatedTournamentConfig);
+  }, [selectedTeams, setTournamentConfig]);
 
   // Trim selected teams if maxTeams changes
   useEffect(() => {

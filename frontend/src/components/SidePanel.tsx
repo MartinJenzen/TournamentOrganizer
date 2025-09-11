@@ -17,7 +17,7 @@ export default function SidePanel() {
         </button>
 
         {/* Load Tournament */}
-        <button className="sidepanel-button blue" onClick={() => console.log('Load Tournament')}>
+        <button className="sidepanel-button blue" onClick={() => navigate('/load-tournament')}>
           Load Tournament
         </button>
 

@@ -30,11 +30,20 @@
   margin-bottom: .5rem;
 }
 
+.modal-body p {
+  margin-top: 0;
+  white-space: pre-line;
+}
+
 .modal-body input {
   width: 100%;
   margin-bottom: .5rem;
   padding: .5rem;
   box-sizing: border-box;
+}
+
+.modal-body input:last-child {
+  margin-bottom: 1rem;
 }
 
 .modal-footer {
@@ -46,4 +55,5 @@
 .modal-btn {
   font-weight: bold;
   padding: .5rem .5rem;
+  min-width: 5rem;
 }

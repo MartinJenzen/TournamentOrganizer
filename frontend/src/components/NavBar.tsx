@@ -11,7 +11,9 @@ export default function NavBar() {
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>('login');
-  const [serverResponse, setServerResponse] = useState<string | null>(null);
+
+  const modalTitle = modalMode === 'info' ? 'About' : undefined;
+  const modalMessage = modalMode === 'info' ? 'Creator: Martin Jensen\nDate: July 2025' : undefined;
 
   const openModal = (mode: ModalMode) => {
     setModalMode(mode);
@@ -38,14 +40,11 @@ export default function NavBar() {
         setUser(user);
         navigate('/dashboard');
       }
+      
+      setModalIsOpen(false);
     } 
     catch (error: any) {
       console.error('Error during authentication:', error);
-      setServerResponse(error.message);
-    }
-    finally {
-      setModalIsOpen(false);
-      setTimeout(() => setServerResponse(null), 3000); // Clear message after 3 sec.
     }
   }
 
@@ -58,8 +57,6 @@ export default function NavBar() {
     }
     catch (error) {
       console.error('Logout error:', error);
-      setServerResponse('Logout failed. Please try again.');
-      setTimeout(() => setServerResponse(null), 3000); // Clear message after 3 sec.
     }
   }
 
@@ -104,7 +101,7 @@ export default function NavBar() {
             </Fragment>
           )}
 
-          {/* About */}
+          {/* About */} 
           <button
             onClick={() => openModal('info')}
             className="transparent"
@@ -117,9 +114,10 @@ export default function NavBar() {
       <UniversalModal
         isOpen={modalIsOpen}
         mode={modalMode}
+        title={modalTitle}
+        message={modalMessage}
         onCancel={handleCancel}
         onConfirm={handleConfirm}
-        message={serverResponse ?? undefined}
       />
     </Fragment>
   )

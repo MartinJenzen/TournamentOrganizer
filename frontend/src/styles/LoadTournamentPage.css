@@ -1,0 +1,41 @@
+.load-tournament-page {
+  /* flex-direction: column; */
+}
+
+.buttons-container {
+  margin-bottom: 1rem;
+  margin-left: 0.5rem;
+}
+
+.buttons-container button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tournaments-table {
+  width: 650px;
+  border-collapse: collapse;
+  margin-left: .5rem;
+}
+
+.tournaments-table th,
+.tournaments-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+/* Last column */
+.tournaments-table th:last-child,
+.tournaments-table td:last-child {
+    width: 0.5rem; /* TODO: take a look at this */
+}
+
+.tournaments-table tbody tr:hover {
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.tournaments-table tbody tr.selected {
+  background: #e0f7fa;
+}

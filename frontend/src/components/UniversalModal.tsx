@@ -6,7 +6,10 @@ export type ModalMode = 'login' | 'signup' | 'confirm' | 'info'
 export type ModalProps = {
   isOpen: boolean
   mode: ModalMode
-  message?: string        // for confirm/info
+  title?: string
+  message?: string
+  confirmButtonText?: string
+  isDangerous?: boolean
   onConfirm?: (data?: any) => void
   onCancel: () => void
 }
@@ -25,7 +28,7 @@ export type ModalProps = {
  ** onConfirm:  callback invoked with form data or undefined
  ** onCancel:   callback invoked when the user cancels or closes
  */
-export default function UniversalModal({ isOpen, mode, message, onConfirm, onCancel }: ModalProps) {
+export default function UniversalModal({ isOpen, mode, title, message, confirmButtonText, isDangerous, onConfirm, onCancel }: ModalProps) {
   
   const initialForm = { email: '', password: '', username: '' }
   const firstInputFieldRef = useRef<HTMLInputElement>(null);
@@ -87,7 +90,7 @@ export default function UniversalModal({ isOpen, mode, message, onConfirm, onCan
       >  
         <div className="modal-body">
           
-          {/* Login Modal */}
+          {/* Login modal */}
           {mode === 'login' && (
             <Fragment>
               <h2>Login</h2>
@@ -115,7 +118,7 @@ export default function UniversalModal({ isOpen, mode, message, onConfirm, onCan
             </Fragment>
           )}
 
-          {/* Sign Up Modal */}
+          {/* Sign Up modal */}
           {mode === 'signup' && (
             <Fragment>
               <h2>Sign Up</h2>
@@ -152,10 +155,10 @@ export default function UniversalModal({ isOpen, mode, message, onConfirm, onCan
             </Fragment>
           )}
           
-          {/* Confirm/Info Modal */}
+          {/* Confirm modal */}
           {(mode === 'confirm' || mode === 'info') && (
             <Fragment>
-              <h2>{mode === 'confirm' ? 'Confirm' : 'Info'}</h2>
+              <h2>{title}</h2>
               <p>{message}</p>
             </Fragment>
           )}
@@ -165,21 +168,26 @@ export default function UniversalModal({ isOpen, mode, message, onConfirm, onCan
         <div className="modal-footer">
           
           {/* Cancel */}
-          <button className="modal-btn cancel" onClick={handleCancel}>
-            {mode === 'info' ? 'Close' : 'Cancel'}
-          </button>
+          {mode !== 'info' && (
+            <button className="modal-btn cancel" onClick={handleCancel}>
+              Cancel
+            </button>
+          )}
           
-          {/* Login/signup */}
+          {/* Login/Signup */}
           {(mode === 'login' || mode === 'signup') && (
             <button className="modal-btn blue" onClick={handleConfirm}>
               {mode === 'login' ? 'Login' : 'Sign Up'}
             </button>
           )}
           
-          {/* Confirmation */}
-          {mode === 'confirm' && (
-            <button className="modal-btn blue" onClick={handleConfirm}>
-              OK
+          {/* Confirmation/Info */}
+          {(mode === 'confirm' || mode === 'info') && (
+            <button
+              className={`modal-btn ${isDangerous ? 'danger' : 'blue'}`}
+              onClick={handleConfirm}
+            >
+              {confirmButtonText || 'OK'}
             </button>
           )}
         </div>

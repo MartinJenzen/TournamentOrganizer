@@ -1,7 +1,14 @@
 **TODO**
 -
 - Standardize color themes
-- Implement more error handling
-- Implement error response messages to users
+- More error handling
+- Clean up CSS (especially containers, Table.css and TournamentPage.css)
+- Error response messages to users
 - Add loading indicators while fetching data
-- Write unit tests
+- Unit tests
+- More separation of concerns in \routes\tournaments.ts
+- Atomize huge functions
+- Make UI design more sexier (e.g., see TournamentPage.css for experiement and for inspiration: https://www.premierleague.com/en)
+  - Use consistent spacing and alignment
+  - Improve color contrast and readability
+  - Enhance button styles and interactions

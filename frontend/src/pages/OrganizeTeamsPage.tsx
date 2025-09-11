@@ -1,33 +1,36 @@
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import { useNavigate} from 'react-router-dom';
-import { useTournamentDetails } from '../context/TournamentContext';
+import { useTournamentContext } from '../context/TournamentContext';
 import '../styles/OrganizeTeamsPage.css';
 import { createTournament } from '../services/tournamentService';
 
 export default function OrganizeTeamsPage() {
   const navigate = useNavigate();
-  const { tournamentDetails, setTournamentDetails } = useTournamentDetails();
+  const { tournamentConfig, setTournamentConfig } = useTournamentContext();
+  const { tournament, setTournament } = useTournamentContext();
 
   const [groups, setGroups] = useState(initializeGroups());
+  const [hasRandomizedGroups, setHasRandomizedGroups] = useState(false);
   
   // States for drag and drop functionality
   const [draggedTeam, setDraggedTeam] = useState<string | null>(null);
   const [sourceGroup, setSourceGroup] = useState<string | null>(null);
   const [hoveredTargetTeam, setHoveredTargetTeam] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tournamentDetails.tournamentType === 'GROUP_AND_KNOCKOUT')
-      handleRandomizeGroups();
-  }, []);
+  // Randomize groups on initial render if tournament has groups
+  if (tournamentConfig.tournamentType === 'GROUP_AND_KNOCKOUT' && !hasRandomizedGroups) {
+    handleRandomizeGroups();
+    setHasRandomizedGroups(true);
+  }
 
   // Initialize empty groups with groups names (A, B, C, ...)
   function initializeGroups() {
-    if (tournamentDetails.tournamentType !== 'GROUP_AND_KNOCKOUT')
+    if (tournamentConfig.tournamentType !== 'GROUP_AND_KNOCKOUT')
       return {};
     
     const initialGroups: Record<string, string[]> = {};
     
-    for (let i = 0; i < tournamentDetails.groupsCount; i++) {
+    for (let i = 0; i < tournamentConfig.groupsCount; i++) {
       const groupName = String.fromCharCode(65 + i); // Assignment of letters to groups, starting with 'A'
       initialGroups[groupName] = [];
     }
@@ -37,14 +40,14 @@ export default function OrganizeTeamsPage() {
 
   // Randomly assign teams to groups
   function handleRandomizeGroups() {
-    const teams = tournamentDetails.selectedTeams.slice();
+    const teams = tournamentConfig.selectedTeams.slice();
     const shuffledTeams = teams.sort(() => Math.random() - 0.5);
 
     const randomGroups: Record<string, string[]> = initializeGroups();
 
     // Distribute teams into groups
     shuffledTeams.forEach((team, index) => {
-      const groupName = String.fromCharCode(65 + (index % tournamentDetails.groupsCount));
+      const groupName = String.fromCharCode(65 + (index % tournamentConfig.groupsCount));
       randomGroups[groupName].push(team);
     });
 
@@ -53,20 +56,14 @@ export default function OrganizeTeamsPage() {
   }
 
   async function handleCreateTournament() {
-    const newTournament = { ...tournamentDetails, groups };
-    setTournamentDetails(newTournament);
+    const newTournament = { ...tournamentConfig, groups };
+    setTournamentConfig(newTournament);
     
     try {
       const createdTournament = await createTournament(newTournament);
-      console.log('Tournament created successfully:', createdTournament); // TODO: REMOVE
-      setTournamentDetails({
-        ...newTournament,
-        id: createdTournament.id,
-        createdAt: createdTournament.createdAt,
-        updatedAt: createdTournament.updatedAt
-      });
-      console.log(newTournament); // TODO: REMOVE
-      navigate('/tournament-page');
+      console.log('Tournament created:', createdTournament); // TODO: REMOVE
+      setTournament(createdTournament);
+      navigate('/tournament');
     } 
     catch (error) {
       console.error('Error creating tournament:', error);
@@ -161,13 +158,13 @@ export default function OrganizeTeamsPage() {
   return (
     <div className="organize-teams-page">
 
-      {tournamentDetails.tournamentType === 'GROUP_AND_KNOCKOUT' && (
+      {tournamentConfig.tournamentType === 'GROUP_AND_KNOCKOUT' && (
         <h1>Organize Teams</h1>
       )}
-      {tournamentDetails.tournamentType === 'CUP' && (
+      {tournamentConfig.tournamentType === 'CUP' && (
         <h1>Organize Knockout Bracket</h1>
       )}
-      {tournamentDetails.tournamentType === 'LEAGUE' && (
+      {tournamentConfig.tournamentType === 'LEAGUE' && (
         <h1>Organize League</h1> 
       )}
       
@@ -178,7 +175,7 @@ export default function OrganizeTeamsPage() {
         <button 
           onClick={handleRandomizeGroups} 
           className="control-button" 
-          disabled={tournamentDetails.tournamentType !== 'GROUP_AND_KNOCKOUT'}
+          disabled={tournamentConfig.tournamentType !== 'GROUP_AND_KNOCKOUT'}
         >
           🎲 Randomize
         </button>
@@ -190,7 +187,7 @@ export default function OrganizeTeamsPage() {
       </div>
       
       {/* Groups */}
-      {tournamentDetails.tournamentType === 'GROUP_AND_KNOCKOUT' && (
+      {tournamentConfig.tournamentType === 'GROUP_AND_KNOCKOUT' && (
         <Fragment>
 
           {/* Groups */}
@@ -230,7 +227,7 @@ export default function OrganizeTeamsPage() {
       )}
 
       {/* Knockout play-offs bracket */}
-      {(tournamentDetails.tournamentType === 'CUP') && (
+      {(tournamentConfig.tournamentType === 'CUP') && (
         <div className="knockout-bracket">
           {/* Placeholder for knockout bracket visualization */}
           <div className="bracket-placeholder">Knockout bracket will be displayed here.</div>
@@ -238,7 +235,7 @@ export default function OrganizeTeamsPage() {
       )}
 
       {/* League table */}
-      {(tournamentDetails.tournamentType === 'LEAGUE') && (
+      {(tournamentConfig.tournamentType === 'LEAGUE') && (
         <div className="league-table">
           {/* Placeholder for league table visualization */}
           <div className="table-placeholder">League table will be displayed here.</div>

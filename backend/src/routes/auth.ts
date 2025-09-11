@@ -54,7 +54,7 @@ router.post('/signup', async (req, res) => {    // TODO: req -> req: Request?
       console.log('User created successfully:', user);
     
     // Generate JWT token
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '24h' });
 
     return res
       // Set an HttpOnly, Secure, SameSite cookie
@@ -62,7 +62,7 @@ router.post('/signup', async (req, res) => {    // TODO: req -> req: Request?
         httpOnly: true,                                 // Prevents client-side JS access
         secure: process.env.NODE_ENV === 'production',  // Use secure cookies in production
         sameSite: 'lax',                                // CSRF protection
-        maxAge: 60 * 60 * 1000                          // 1 hour
+        maxAge: 60 * 60 * 24000                          // 24 hours
       })
       .status(201)
       .json(user)
@@ -91,7 +91,7 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password!' });
   }
 
-  const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '24h' });
 
   if (token) {
     console.log('User logged in successfully:', {
@@ -106,7 +106,7 @@ router.post('/login', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 1000
+      maxAge: 60 * 60 * 24000
     })
     .status(200)
     .json({ id: user.id, email: user.email, username: user.username })

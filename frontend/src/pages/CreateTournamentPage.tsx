@@ -1,37 +1,37 @@
 import React, { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTournamentDetails } from '../context/TournamentContext';
+import { useTournamentContext } from '../context/TournamentContext';
 import '../styles/CreateTournamentPage.css';
 
 // TODO: rename to TournamentSetupPage
 export default function CreateTournamentPage() {
   const navigate = useNavigate();
-  const { tournamentDetails, setTournamentDetails } = useTournamentDetails();
+  const { tournamentConfig, setTournamentConfig } = useTournamentContext();
 
-  const [tournamentName, setTournamentName]                 = useState(tournamentDetails.tournamentName);
-  const [tournamentType, setTournamentType]                 = useState(tournamentDetails.tournamentType);
-  const [teamsCount, setTeamsCount]                         = useState(tournamentDetails.teamsCount);
-  const [matchesPerTeam, setMatchesPerTeam]                 = useState(tournamentDetails.matchesPerTeam);
-  const [teamsPerGroup, setTeamsPerGroup]                   = useState(tournamentDetails.teamsPerGroup);
-  const [groupsCount, setGroupsCount]                       = useState(tournamentDetails.groupsCount);
-  const [teamsAdvancingPerGroup, setTeamsAdvancingPerGroup] = useState(tournamentDetails.teamsAdvancingPerGroup);
-  const [knockoutLegs, setKnockoutLegs]                     = useState(tournamentDetails.knockoutLegs);
+  const [tournamentName, setTournamentName]                 = useState(tournamentConfig.tournamentName);
+  const [tournamentType, setTournamentType]                 = useState(tournamentConfig.tournamentType);
+  const [teamsCount, setTeamsCount]                         = useState(tournamentConfig.teamsCount);
+  const [matchesPerTeam, setMatchesPerTeam]                 = useState(tournamentConfig.matchesPerTeam);
+  const [teamsPerGroup, setTeamsPerGroup]                   = useState(tournamentConfig.teamsPerGroup);
+  const [groupsCount, setGroupsCount]                       = useState(tournamentConfig.groupsCount);
+  const [teamsAdvancingPerGroup, setTeamsAdvancingPerGroup] = useState(tournamentConfig.teamsAdvancingPerGroup);
+  const [knockoutLegs, setKnockoutLegs]                     = useState(tournamentConfig.knockoutLegs);
   
   const [teamsPerGroupOptions, setTeamsPerGroupOptions]     = useState([2, 4, 8]);
 
   // Repopulate the form fields upon return to page
   useEffect(() => {
-    if (tournamentDetails) {
-      setTournamentName(tournamentDetails.tournamentName);
-      setTournamentType(tournamentDetails.tournamentType);
-      setTeamsCount(tournamentDetails.teamsCount);
-      setMatchesPerTeam(tournamentDetails.matchesPerTeam);
-      setTeamsPerGroup(tournamentDetails.teamsPerGroup);
-      setGroupsCount(tournamentDetails.groupsCount);
-      setTeamsAdvancingPerGroup(tournamentDetails.teamsAdvancingPerGroup);
-      setKnockoutLegs(tournamentDetails.knockoutLegs);
+    if (tournamentConfig) {
+      setTournamentName(tournamentConfig.tournamentName);
+      setTournamentType(tournamentConfig.tournamentType);
+      setTeamsCount(tournamentConfig.teamsCount);
+      setMatchesPerTeam(tournamentConfig.matchesPerTeam);
+      setTeamsPerGroup(tournamentConfig.teamsPerGroup);
+      setGroupsCount(tournamentConfig.groupsCount);
+      setTeamsAdvancingPerGroup(tournamentConfig.teamsAdvancingPerGroup);
+      setKnockoutLegs(tournamentConfig.knockoutLegs);
     }
-  }, [tournamentDetails]);
+  }, [tournamentConfig]);
 
   // Different options for total number of teams, based on tournament type
   const teamsCountOptions = useMemo(() => {
@@ -95,8 +95,8 @@ export default function CreateTournamentPage() {
     event.preventDefault();    // Prevent the default form submission behavior
 
     // Redirect to the SelectTeamsPage with the tournament details
-    const newTournamentDetails = {
-      ...tournamentDetails,   // Spread previous tournamentDetails into new object
+    const currentTournamentConfig = {
+      ...tournamentConfig,
       tournamentName,
       tournamentType,
       teamsCount,
@@ -107,8 +107,8 @@ export default function CreateTournamentPage() {
       knockoutLegs:            tournamentType === 'LEAGUE' ? 0 : knockoutLegs,
     };
 
-    setTournamentDetails(newTournamentDetails);
-    console.log('Tournament Details:', newTournamentDetails); // TODO: REMOVE
+    setTournamentConfig(currentTournamentConfig);
+    console.log('tournamentConfig:', currentTournamentConfig); // TODO: REMOVE
 
     // Redirect to the SelectTeamsPage with the tournament details
     navigate('/select-teams');

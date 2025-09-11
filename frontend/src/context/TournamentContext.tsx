@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 
-export interface TournamentDetails {
+export interface TournamentConfig {
   id?: number;
   createdAt?: string;
   updatedAt?: string; 
@@ -16,13 +16,90 @@ export interface TournamentDetails {
   groups?: Record<string, string[]>;
 }
 
+// TODO: align frontend and backend fields?
+export interface Tournament {
+  id: number;
+  name: string;
+  type: 'LEAGUE' | 'GROUP_AND_KNOCKOUT' | 'CUP';
+  stage: string;
+  createdAt: string;
+  updatedAt: string;
+  topTeamsAdvancing: number;
+  teams: Array<{
+    id: number;
+    name: string;
+    groupId?: number;
+    gamesPlayed: 0,
+    wins:        0,
+    draws:       0,
+    losses:      0,
+    goalsFor:    0,
+    goalsAgainst:0,
+    goalDifference: 0,
+    points:      0,
+    players: Array<{
+      id: number;
+      name: string;
+      teamId: number;
+      goals: number;
+      assists: number;
+    }>;
+  }>;
+  groups?: Array<{
+    id: number;
+    name: string;
+    teams: Tournament['teams'];
+  }>;
+  matches: Array<{
+    id: number;
+    homeTeam: {
+      id: number;
+      name: string;
+    };
+    awayTeam: {
+      id: number;
+      name: string;
+    };
+    matchDay: number;
+    stage: string;
+    homeScore: number;
+    awayScore: number;
+    played: boolean;
+  }>;
+}
+
+export interface Match {
+  id: number;
+  homeTeam: { id: number; name: string };
+  awayTeam: { id: number; name: string };
+  homeScore: number;
+  awayScore: number;
+  matchDay: number;
+  stage: string;
+  played: boolean;
+  events?: Array<{
+    id: number;
+    playerId: number;
+    type: 'GOAL' | 'ASSIST';
+    amount: number;
+    player: { id: number; name: string; teamId: number };
+  }>;
+}
+
 interface ContextShape {
-  tournamentDetails: TournamentDetails;
-  setTournamentDetails: Dispatch<SetStateAction<TournamentDetails>>;
+  // Initial tournament state getting built when user is creating a new tournament
+  tournamentConfig: TournamentConfig;
+  setTournamentConfig: Dispatch<SetStateAction<TournamentConfig>>;
+
+  // Created tournament fetched from backend
+  tournament?: Tournament;
+  setTournament: Dispatch<SetStateAction<Tournament | undefined>>;
+
+  // Reset both slots to default values
   resetTournament: () => void;
 }
 
-const defaultTournamentDetails: TournamentDetails = {
+const defaultTournamentConfig: TournamentConfig = {
   tournamentName: '',
   tournamentType: 'LEAGUE',
   teamsCount: 8,
@@ -36,38 +113,45 @@ const defaultTournamentDetails: TournamentDetails = {
 };
 
 const TournamentContext = createContext<ContextShape>({
-  tournamentDetails: defaultTournamentDetails,
-  setTournamentDetails: () => {},
+  tournamentConfig: defaultTournamentConfig,
+  setTournamentConfig: () => {},
+  tournament: undefined,
+  setTournament: () => {},
   resetTournament: () => {}
 });
 
 export function TournamentProvider({ children }: { children: ReactNode }) {
-  const [tournamentDetails, setTournamentDetails] = useState<TournamentDetails>(() => {
-    const storedTournamentDetails = sessionStorage.getItem('tournamentDetails');
-    return storedTournamentDetails ? JSON.parse(storedTournamentDetails) : defaultTournamentDetails;
+  const [tournamentConfig, setTournamentConfig] = useState<TournamentConfig>(() => {
+    const storedTournamentConfig = sessionStorage.getItem('tournamentConfig');
+    return storedTournamentConfig ? JSON.parse(storedTournamentConfig) : defaultTournamentConfig;
   });
 
-  // Persist on every change
+  const [tournament, setTournament] = useState<Tournament | undefined>(); // -> (undefined) ?
+
+  // Persist only the config
   useEffect(() => {
-    sessionStorage.setItem('tournamentDetails', JSON.stringify(tournamentDetails));
-  }, [tournamentDetails]);
+    sessionStorage.setItem('tournamentConfig', JSON.stringify(tournamentConfig));
+  }, [tournamentConfig]);
 
   const resetTournament = () => {
-    sessionStorage.removeItem('tournamentDetails');
-    setTournamentDetails(defaultTournamentDetails);
+    sessionStorage.removeItem('tournamentConfig');
+    setTournamentConfig(defaultTournamentConfig);
+    setTournament(undefined);
   };
 
   return (
-    <TournamentContext.Provider value={{ tournamentDetails, setTournamentDetails, resetTournament }}>
+    <TournamentContext.Provider 
+      value={{ tournamentConfig, setTournamentConfig, tournament, setTournament, resetTournament }}
+    >
       {children}
     </TournamentContext.Provider>
   )
 }
 
-export function useTournamentDetails() {
+export function useTournamentContext() {
   const context = useContext(TournamentContext);
   if (!context) 
-    throw new Error('useTournament must be inside a TournamentProvider!');
+    throw new Error('useTournamentContext must be inside a TournamentProvider!');
 
   return context;
 }
