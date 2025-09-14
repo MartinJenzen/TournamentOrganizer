@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './auth';
 import { generateMatchFixtures } from '../helpers/tournamentHelper';
+import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament } from '../helpers/matchReportHelper';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -279,7 +280,6 @@ router.get('/:id/fixtures', requireAuth, async (req: Request, res: Response) => 
   }
 });
 
-// TODO: to be atomized
 router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: Request, res: Response) => {
   const tournamentId = Number(req.params.tournamentId);
   const matchId = Number(req.params.matchId);
@@ -293,179 +293,24 @@ router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: 
     }[];
   };
 
-  if (!Number.isInteger(matchId) || !Number.isInteger(tournamentId))
-    return res.status(400).json({ error: 'Invalid match or tournament ID!' });
-
-  if (!Array.isArray(events))
-    return res.status(400).json({ error: 'Invalid match events!' });
-
   try {
-    
-    const match = await prisma.match.findUnique({
-      where: { id: matchId },
-      select: { id: true, tournamentId: true }
-    });
+    await validateMatchReport(prisma, tournamentId, matchId, events);
 
-    if (!match || match.tournamentId !== tournamentId)
-      return res.status(404).json({ error: 'Match not found in tournament!' });
-
-    // Run all changes inside a transaction so updates are atomic
     await prisma.$transaction(async (transaction) => {
-      
-      // Delete already existing events for this match, so they can be replaced with newer data
-      await transaction.matchEvent.deleteMany({ where: { matchId } });
-
-      // Map events from DTO to expected DB format
-      const matchEventsToCreate = events
-        .filter(event => event.amount > 0)    // Ignore zero-amount events, just in case
-        .map(event => ({
-          matchId,
-          playerId: event.playerId,
-          type: event.type === 'GOAL' ? 'GOAL' : 'ASSIST',
-          amount: event.amount
-        }));
-
-      // Create match events
-      if (matchEventsToCreate.length)
-        await transaction.matchEvent.createMany({ data: matchEventsToCreate });
-
-      // Update match
-      await transaction.match.update({
-        where: { id: matchId },
-        data: { homeScore, awayScore, played: true }
-      });
-
-      // Reset all tournament player stats before being recomputed...
-      await transaction.player.updateMany({
-        where: { team: { tournamentId } },
-        data: { goals: 0, assists: 0 }
-      });
-
-      // All tournament match events grouped by playerId and sorted by match event type, to recompute total goals/assists per player
-      const playerAggregates = await transaction.matchEvent.groupBy({
-        by: ['playerId', 'type'],
-        where: { match: { tournamentId } },
-        _sum: { amount: true }
-      });
-
-      // Recompute player stats
-      for (const event of playerAggregates) {
-        const total = event._sum.amount || 0;
-        
-        if (event.type === 'GOAL') 
-          await transaction.player.update({ where: { id: event.playerId }, data: { goals: total } });
-        else if (event.type === 'ASSIST') 
-          await transaction.player.update({ where: { id: event.playerId }, data: { assists: total } });
-      }
-
-      // Reset all tournament teams stats before being recomputed...
-      // This avoids incremental update complexity, making it simpler than trying to adjust only the affected teams
-      await transaction.team.updateMany({
-        where: { tournamentId },
-        data: {
-          gamesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0
-        }
-      });
-
-      // Load all played matches in tournament before being recomputed...
-      const playedMatches = await transaction.match.findMany({
-        where: { tournamentId, played: true },
-        select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true }
-      });
-
-      const teamStats = new Map<number, { 
-        gamesPlayed: number; 
-        wins: number; 
-        draws: number; 
-        losses: number; 
-        goalsFor: number; 
-        goalsAgainst: number; 
-      }>();
-      
-      // Helper to get or initialize team stats
-      function getOrInitializeTeamStats(teamId: number) {
-        if (!teamStats.has(teamId)) 
-          teamStats.set(teamId, { gamesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 });
-
-        return teamStats.get(teamId)!;
-      };
-
-      // Recompute team stats from all played matches
-      for (const playedMatch of playedMatches) {
-        const homeTeam = getOrInitializeTeamStats(playedMatch.homeTeamId);
-        const awayTeam = getOrInitializeTeamStats(playedMatch.awayTeamId);
-        
-        homeTeam.gamesPlayed++; 
-        awayTeam.gamesPlayed++;
-
-        homeTeam.goalsFor += playedMatch.homeScore; 
-        homeTeam.goalsAgainst += playedMatch.awayScore;
-        
-        awayTeam.goalsFor += playedMatch.awayScore; 
-        awayTeam.goalsAgainst += playedMatch.homeScore;
-        
-        if (playedMatch.homeScore > playedMatch.awayScore) { 
-          homeTeam.wins++; 
-          awayTeam.losses++; 
-        }
-        else if (playedMatch.homeScore < playedMatch.awayScore) { 
-          awayTeam.wins++; 
-          homeTeam.losses++; 
-        }
-        else { 
-          homeTeam.draws++; 
-          awayTeam.draws++; 
-        }
-      }
-
-      // Persist recomputed team stats back to DB
-      for (const [teamId, teamStat] of teamStats) {
-        await transaction.team.update({
-          where: { id: teamId },
-          data: {
-            gamesPlayed: teamStat.gamesPlayed,
-            wins: teamStat.wins,
-            draws: teamStat.draws,
-            losses: teamStat.losses,
-            goalsFor: teamStat.goalsFor,
-            goalsAgainst: teamStat.goalsAgainst,
-            goalDifference: teamStat.goalsFor - teamStat.goalsAgainst,
-            points: teamStat.wins * 3 + teamStat.draws
-          }
-        });
-      }
+      await replaceMatchEvents(transaction, matchId, events);
+      await updateMatch(transaction, matchId, homeScore, awayScore);
+      await recomputePlayerStats(transaction, tournamentId);
+      await recomputeTeamStats(transaction, tournamentId);
     });
 
-    // Fetch freshly updated tournament to be returned...
-    const updatedTournament = await prisma.tournament.findUnique({
-      where: { id: tournamentId },
-      include: {
-        groups: {
-          include: {
-            teams: { include: { players: true } }
-          }
-        },
-        teams: { include: { players: true } },
-        matches: {
-          include: {
-            homeTeam: { select: { id: true, name: true } },
-            awayTeam: { select: { id: true, name: true } },
-            events: {
-              include: {
-                player: { select: { id: true, name: true, teamId: true } }
-              }
-            }
-          },
-          orderBy: [{ matchDay: 'asc' }, { id: 'asc' }]
-        }
-      }
-    });
-
+    const updatedTournament = await fetchUpdatedTournament(prisma, tournamentId);
     return res.status(200).json(updatedTournament);
-  } 
-  catch (error) {
+  }
+  catch (error: any) {
+    const status = error?.status || 500;
+    const message = error?.message || 'Failed to save match report!';
     console.error('Match report error:', error);
-    return res.status(500).json({ error: 'Failed to save match report!' });
+    return res.status(status).json({ error: message });
   }
 });
 
