@@ -1,143 +1,43 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './auth';
-import { generateMatchFixtures } from '../helpers/tournamentHelper';
+import { validateTournament, createTournament, createGroupsAndTeams, createTeamsOnly, fetchCreatedTournament } from '../helpers/tournamentHelper';
 import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament } from '../helpers/matchReportHelper';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// TODO: atomize and move to tournamentHelper.ts
-// Create new tournament
-router.post('/', requireAuth, async (req: Request, res: Response) => {
-  console.log('Tournament creation request received:', req.body.tournamentName);  // TODO: remove
-  
+// Create a new tournament
+router.post('/', requireAuth, async (req: Request, res: Response) => {  
   try {
     const payload = req.body;
     const userId = (req as any).user.id;
 
-    // Tournament
-    const tournamentData = await prisma.tournament.create({
-      data: {
-        ownerId: userId,
-        name: payload.tournamentName,
-        type: payload.tournamentType,
-        teamsCount: payload.teamsCount,
-        matchesPerTeam: payload.matchesPerTeam,
-        teamsPerGroup: payload.tournamentType === 'GROUP_AND_KNOCKOUT' ? payload.teamsPerGroup : 0,
-        groupsCount: payload.tournamentType === 'GROUP_AND_KNOCKOUT' ? payload.groupsCount : 0,
-        topTeamsAdvancing: payload.tournamentType === 'GROUP_AND_KNOCKOUT' ? payload.teamsAdvancingPerGroup : 0,        
-        knockoutLegs: payload.tournamentType !== 'LEAGUE' ? payload.knockoutLegs : 0,
-        stage: payload.tournamentType === 'LEAGUE'
-          ? 'LEAGUE_STAGE'
-          : payload.tournamentType === 'GROUP_AND_KNOCKOUT'
-          ? 'GROUP_STAGE'
-          : 'KNOCKOUT_STAGE',
-      },
-      include: {
-        groups: true,
-        teams: true,
-        matches: true
-      }
-    });
+    // Create tournament
+    await validateTournament(payload);
+    const tournamentData = await createTournament(prisma, userId, payload);
 
-    // Groups and teams for GROUP_AND_KNOCKOUT tournaments
-    if (payload.tournamentType === 'GROUP_AND_KNOCKOUT' && payload.groups) {
-      
-      // Convert frontend groups object to array format
-      const groupsArray = Object.entries(payload.groups).map(([groupName, teams]) => ({
-        groupName,
-        teams: teams as string[]    // Array of team names
-      }));
-    
-      // Create groups first (one by one to get IDs)
-      const createdGroups = await Promise.all(
-        groupsArray.map(async (grp) => {
-          return await prisma.group.create({
-            data: {
-              name: grp.groupName,
-              tournamentId: tournamentData.id
-            }
-          });
-        })
-      );
-    
-      // Then create teams with proper group linkage
-      const teamData = groupsArray.flatMap((group) => 
-        group.teams.map((teamName) => {
-          const matchingGroups = createdGroups.find(createdGroup => createdGroup.name === group.groupName);
-          
-          if (!matchingGroups) 
-            throw new Error(`Group ${group.groupName} not found!`);
-          
-          return {
-            name: teamName,
-            groupId: matchingGroups!.id,    // ! asserts that matchingGroups is not null
-            tournamentId: tournamentData.id,
-          };
-        })
-      );
+    // Create teams (and groups if needed) based on tournament type    
+    if (payload.tournamentType === 'GROUP_AND_KNOCKOUT' && payload.groups) 
+      await createGroupsAndTeams(payload, prisma, tournamentData);
+    else if (payload.selectedTeams && payload.selectedTeams.length > 0)
+      await createTeamsOnly(payload, prisma, tournamentData);
 
-      const createdTeams = await Promise.all(
-        teamData.map(team => prisma.team.create({ data: team }))
-      );
-
-      await generateMatchFixtures(tournamentData.id, payload.tournamentType, payload.matchesPerTeam, createdTeams, createdGroups);
-    }
-
-    // Teams for LEAGUE or CUP tournaments
-    else if (payload.selectedTeams && payload.selectedTeams.length > 0) {
-      const createdTeams = await Promise.all(
-        payload.selectedTeams.map((teamName: string) => 
-          prisma.team.create({
-            data: {
-              name: teamName,
-              tournamentId: tournamentData.id,
-              groupId: null  // No group for LEAGUE or CUP tournaments
-            }
-          })
-        )
-      );
-
-      await generateMatchFixtures(tournamentData.id, payload.tournamentType, payload.matchesPerTeam, createdTeams);
-    }
-
-    const fullTournamentData = await prisma.tournament.findUnique({
-      where: { id: tournamentData.id },
-      include: {
-        groups: { 
-          include: { 
-            teams: { 
-              include: { players: true } 
-            } 
-          } 
-        },
-        teams: { include: { players: true } },
-        matches: { 
-          include: {
-            homeTeam: { select: { id: true, name: true } },
-            awayTeam: { select: { id: true, name: true } }
-          }, 
-          orderBy: [
-            { matchDay: 'asc' },
-            { id: 'asc' }           
-          ]
-        },
-      }
-    });
+    const fullTournamentData = await fetchCreatedTournament(prisma, tournamentData);
 
     return res.status(201).json(fullTournamentData);
   }
-  catch (err) {
-    console.error('Error creating tournament: ', err);
-    return res.status(500).json({ error: 'Failed to create tournament!' });
+  catch (error: any) {
+    const status = error?.status || 500;
+    const message = error?.message || 'Failed to create tournament!';
+    console.error('Tournament creation error: ', error);
+    return res.status(status).json({ error: message });
   }
 });
 
 // Get list of all tournaments created by user
 router.get('/user-tournaments', requireAuth, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  console.log('Fetching list of tournaments for user ID:', userId);  // TODO: remove
 
   try {
     const tournaments = await prisma.tournament.findMany({
@@ -164,7 +64,6 @@ router.get('/user-tournaments', requireAuth, async (req: Request, res: Response)
 // Get tournament by ID
 router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   const tournamentId = parseInt(req.params.id, 10);
-  console.log('Fetching tournament with ID:', tournamentId);  // TODO: remove
 
   try {
     const tournament = await prisma.tournament.findUnique({
@@ -219,8 +118,6 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
 
   if (existingTournament.ownerId !== userId)
     return res.status(403).json({ error: 'You do not have permission to delete this tournament!' });
-
-  console.log('Deleting tournament with ID:', tournamentId);  // TODO: remove
 
   // Delete 
   await prisma.$transaction([
@@ -296,6 +193,7 @@ router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: 
   try {
     await validateMatchReport(prisma, tournamentId, matchId, events);
 
+    // Run all changes inside a transaction so updates are atomic
     await prisma.$transaction(async (transaction) => {
       await replaceMatchEvents(transaction, matchId, events);
       await updateMatch(transaction, matchId, homeScore, awayScore);
