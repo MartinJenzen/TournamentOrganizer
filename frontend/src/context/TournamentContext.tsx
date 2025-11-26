@@ -17,6 +17,8 @@ export interface TournamentConfig {
 }
 
 // TODO: align frontend and backend fields?
+// TODO: add fields like: matchesPerTeam, etc.?
+// TODO: consider normalizing state structure????
 export interface Tournament {
   id: number;
   name: string;
@@ -99,7 +101,7 @@ interface ContextShape {
   resetTournament: () => void;
 }
 
-const defaultTournamentConfig: TournamentConfig = {
+export const defaultTournamentConfig: TournamentConfig = {
   tournamentName: '',
   tournamentType: 'LEAGUE',
   teamsCount: 8,

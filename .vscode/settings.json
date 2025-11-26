@@ -1,5 +1,6 @@
 {
   "editor.insertSpaces": true,   // Use spaces, not tabs
   "editor.tabSize": 2,           // Make "TAB" == 2 spaces
-  "editor.detectIndentation": false
+  "editor.detectIndentation": false,
+  "prisma.pinToPrisma6": true    // TODO: transition to Prisma 7
 }

@@ -7,8 +7,15 @@
 - Add loading indicators while fetching data
 - Unit tests
 - More separation of concerns in \routes\tournaments.ts
-- Atomize huge functions
+- Atomize huge functions:
+  - 'generateInitialKnockoutMatchesFromGroups' in matchFixturesHelper.ts
 - Make UI design more sexier (e.g., see TournamentPage.css for experiement and for inspiration: https://www.premierleague.com/en)
   - Use consistent spacing and alignment
   - Improve color contrast and readability
   - Enhance button styles and interactions
+- Ensure that match reports won't accept draws in knockout stages
+- Optimize database queries to reduce latency (select only necessary fields)
+- Ensure returned status codes are correct (400 vs. 500)
+- Set default teams per group to 4, as well as teams advancing per group to 2
+- Transition to Prisma 7 (settings.json)
+- Stop group tables from being updated in Knockout phase

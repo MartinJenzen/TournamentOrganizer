@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { generateInitialKnockoutMatchesFromGroups, generateNextRoundOfKnockoutMatches } from '../helpers/matchFixturesHelper';
 
 export async function validateMatchReport(prisma: PrismaClient, tournamentId: number, matchId: number, events: any[]) {
   if (!Number.isInteger(matchId) || !Number.isInteger(tournamentId))
@@ -70,13 +71,14 @@ export async function recomputePlayerStats(transaction: Prisma.TransactionClient
   }
 }
 
+// TODO: adapt to knockout stages (don't update team stats for group tables)
 export async function recomputeTeamStats(transaction: Prisma.TransactionClient, tournamentId: number) {
   // Reset all tournament teams stats before being recomputed...
   // Avoids incremental update complexity, making it simpler than trying to adjust only the affected teams
   await transaction.team.updateMany({
     where: { tournamentId },
     data: {
-      gamesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0
+      gamesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, position: null
     }
   });
 
@@ -139,6 +141,9 @@ export async function recomputeTeamStats(transaction: Prisma.TransactionClient, 
       }
     });
   }
+
+  // Recompute team positions in league/group table
+  await recomputeTeamPositions(transaction, tournamentId);
 }
 
 // Helper to get or initialize team stats
@@ -149,6 +154,61 @@ function getOrInitializeTeamStats(teamId: number, teamStats: Map<number, { games
 
   return teamStats.get(teamId)!;
 };
+
+// Helper to calculate table positions based on points, goal difference and goals for
+async function recomputeTeamPositions(transaction: Prisma.TransactionClient, tournamentId: number) {
+
+  const tournamentType = (await transaction.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { type: true }
+  }))?.type;
+
+  if (!tournamentType)
+    throw { status: 404, message: 'tournamentType not found!' };
+
+  if (tournamentType === 'LEAGUE') {
+    const teams = await transaction.team.findMany({
+      where: { tournamentId },
+      orderBy: [
+        { points: 'desc' },
+        { goalDifference: 'desc' },
+        { goalsFor: 'desc' }
+      ]
+    });
+    
+    for (let i = 0; i < teams.length; i++) {
+      await transaction.team.update({
+        where: { id: teams[i].id },
+        data: { position: i + 1 }
+      });
+    }
+  }
+  else if (tournamentType === 'GROUP_AND_KNOCKOUT') {
+    const groups = await transaction.group.findMany({
+      where: { tournamentId },
+      include: { teams: true }
+    });
+
+    for (const group of groups) {
+      group.teams.sort((teamA, teamB) => {
+        if (teamB.points !== teamA.points)
+          return teamB.points - teamA.points;
+
+        if (teamB.goalDifference !== teamA.goalDifference)
+          return teamB.goalDifference - teamA.goalDifference;
+
+        return teamB.goalsFor - teamA.goalsFor;
+      });
+
+      for (let i = 0; i < group.teams.length; i++) {
+        await transaction.team.update({
+          where: { id: group.teams[i].id },
+          data: { position: i + 1 }
+        });
+      }
+    }
+  }
+}
 
 // Fetch freshly updated tournament to be returned...
 export async function fetchUpdatedTournament(prisma: PrismaClient, tournamentId: number) {
@@ -177,4 +237,56 @@ export async function fetchUpdatedTournament(prisma: PrismaClient, tournamentId:
   });
   
   return updatedTournament;
+}
+
+// Check if all matches in the tournament have been played, and if so, mark the tournament as COMPLETED
+export async function validateTournamentCompletion(transaction: Prisma.TransactionClient, tournamentId: number) {
+  
+  const unplayedLeagueOrGroupStageMatchesCount = await transaction.match.count({
+    where: { tournamentId, played: false, stage: { not: 'KNOCKOUT_STAGE' } }
+  });  
+  
+  const tournament = await transaction.tournament.findUnique({
+    where: { id: tournamentId },
+    include: { 
+      groups: { include: { teams: true } },
+      matches: true
+    }
+  });
+
+  // LEAGUES are completed when all matches are played
+  if (tournament?.type === 'LEAGUE' && unplayedLeagueOrGroupStageMatchesCount === 0) {
+    await transaction.tournament.update({
+      where: { id: tournamentId },
+      data: { status: 'COMPLETED' }
+    });
+  }
+  // CUPS and GROUP_AND_KNOCKOUT tournaments are completed when the finale has been played
+  else if (tournament?.type === 'GROUP_AND_KNOCKOUT' && unplayedLeagueOrGroupStageMatchesCount === 0 || tournament?.type === 'CUP') {
+    
+    // For GROUP_AND_KNOCKOUT tournaments, ensure that knockout stage is set and initial knockout matches are generated
+    if (tournament?.stage !== 'KNOCKOUT_STAGE') {
+      await transaction.tournament.update({
+        where: { id: tournamentId },
+        data: { stage: 'KNOCKOUT_STAGE' }
+      });
+
+      await generateInitialKnockoutMatchesFromGroups(transaction, tournament);
+    }
+
+    const unplayedKnockoutMatchesCount = await transaction.match.count({
+      where: { tournamentId, played: false, stage: 'KNOCKOUT_STAGE' }
+    });
+
+    if (unplayedKnockoutMatchesCount === 0 && tournament?.knockoutRound !== 'FINAL') {
+      await generateNextRoundOfKnockoutMatches(transaction, tournament);
+    }
+
+    if (tournament?.knockoutRound === 'FINAL' && unplayedKnockoutMatchesCount === 0) {
+      await transaction.tournament.update({
+        where: { id: tournamentId },
+        data: { status: 'COMPLETED' }
+      });
+    }
+  }
 }

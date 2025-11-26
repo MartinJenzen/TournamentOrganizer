@@ -1,6 +1,6 @@
 import React, { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTournamentContext } from '../context/TournamentContext';
+import { useTournamentContext, defaultTournamentConfig as defaults } from '../context/TournamentContext';
 import '../styles/CreateTournamentPage.css';
 
 // TODO: rename to TournamentSetupPage
@@ -17,7 +17,7 @@ export default function CreateTournamentPage() {
   const [teamsAdvancingPerGroup, setTeamsAdvancingPerGroup] = useState(tournamentConfig.teamsAdvancingPerGroup);
   const [knockoutLegs, setKnockoutLegs]                     = useState(tournamentConfig.knockoutLegs);
   
-  const [teamsPerGroupOptions, setTeamsPerGroupOptions]     = useState([2, 4, 8]);
+  const [teamsPerGroupOptions, setTeamsPerGroupOptions]     = useState([4, 8]);
 
   // Repopulate the form fields upon return to page
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function CreateTournamentPage() {
       setKnockoutLegs(tournamentConfig.knockoutLegs);
     }
   }, [tournamentConfig]);
-
+  
   // Different options for total number of teams, based on tournament type
   const teamsCountOptions = useMemo(() => {
     const leagueTeamsCountOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20];
@@ -48,20 +48,28 @@ export default function CreateTournamentPage() {
     return leagueTeamsCountOptions;    // Default to league options
     
   }, [tournamentType]);
-  
-  // Reset teamsCount from the proper range when tournamentType changes
-  useEffect(() => {
-    if (!teamsCountOptions.includes(teamsCount)) 
-      setTeamsCount(teamsCountOptions[0]);
 
-  }, [tournamentType, teamsCount, teamsCountOptions]);
+  // Reset teamsCount to its default value if it is invalid for the selected tournament type
+  useEffect(() => {
+    if (!teamsCountOptions.includes(teamsCount))
+      setTeamsCount(defaults.teamsCount);
+  }, [teamsCountOptions, teamsCount]);
+
+  // Reset tournament values to default when tournament type changes
+  useEffect(() => {
+    setMatchesPerTeam(tournamentType === 'CUP' ? 0 : defaults.matchesPerTeam);
+    setTeamsPerGroup(tournamentType === 'GROUP_AND_KNOCKOUT' ? defaults.teamsPerGroup : 0);
+    setGroupsCount((tournamentType === 'LEAGUE' || tournamentType === 'CUP') ? 0 : defaults.groupsCount);
+    setTeamsAdvancingPerGroup((tournamentType === 'LEAGUE' || tournamentType === 'CUP') ? 0 : defaults.teamsAdvancingPerGroup);
+    setKnockoutLegs(tournamentType === 'LEAGUE' ? 0 : defaults.knockoutLegs);
+  }, [tournamentType]);
 
   // Compute possible number of teams per group whenever teamsCount changes
   useEffect(() => {
     if (tournamentType === 'GROUP_AND_KNOCKOUT') {
       const options: number[] = [];
 
-      for (let i = 2; i <= teamsCount; i++) {
+      for (let i = 4; i <= teamsCount; i++) {
         if (teamsCount % i === 0)
           options.push(i);
       }
@@ -108,7 +116,7 @@ export default function CreateTournamentPage() {
     };
 
     setTournamentConfig(currentTournamentConfig);
-    console.log('tournamentConfig:', currentTournamentConfig); // TODO: REMOVE
+    console.log('currentTournamentConfig:', currentTournamentConfig); // TODO: REMOVE
 
     // Redirect to the SelectTeamsPage with the tournament details
     navigate('/select-teams');
@@ -219,7 +227,7 @@ export default function CreateTournamentPage() {
 
             {/* Number of top teams advancing per group */}
             <div className="form-label-and-input">
-              <label className="form-label" htmlFor="teamsAdvancing">Teams Advancing</label>
+              <label className="form-label" htmlFor="teamsAdvancing">Top Teams Advancing</label>
               <select
                 id="teamsAdvancing"
                 className="form-input"
@@ -227,8 +235,13 @@ export default function CreateTournamentPage() {
                 onChange={(event) => setTeamsAdvancingPerGroup(Number(event.target.value))}
                 required
               >
-                <option value={1}>1</option>
+                {groupsCount > 1 && 
+                  <option value={1}>1</option>
+                }
                 <option value={2}>2</option>
+                {teamsPerGroup >= 4 && 
+                  <option value={4}>4</option>
+                }
               </select>
             </div>
           </Fragment>

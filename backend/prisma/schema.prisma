@@ -11,7 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")    // TODO: Remove when transitioning to Prisma 7
 }
 
 /// A person using the system
@@ -41,29 +41,31 @@ model Tournament {
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @default(now()) @updatedAt
 
-  type              TournamentType
-  teamsCount        Int?              @default(0)  // Total number of teams
+  type                TournamentType
+  teamsCount          Int?              @default(0)  // Total number of teams
   
   // League and group stage
-  matchesPerTeam    Int?              @default(0)   // Number of matches against each team in league/group stage
+  matchesPerTeam      Int?              @default(0)   // Number of matches against each team in league/group stage
 
   // Group stage
-  groupsCount       Int?              @default(0)   // Number of groups in group stage
-  teamsPerGroup     Int?              @default(0)   // Number of teams in each group
-  topTeamsAdvancing Int?              @default(0)   // Number of top teams advancing from group stage
-  groups            Group[]                         // Virtual field (no column created)
+  groupsCount         Int?              @default(0)   // Number of groups in group stage
+  teamsPerGroup       Int?              @default(0)   // Number of teams in each group
+  topTeamsAdvancing   Int?              @default(0)   // Number of top teams advancing from group stage
+  groups              Group[]                         // Virtual field (no column created)
 
   // Knockout stage
-  knockoutRound     KnockoutRound?                  // Current knockout round (if applicable)
-  knockoutLegs      Int?              @default(0)   // Number of play-off legs (1 for single-elimination, 2 for double-elimination)
+  knockoutRound       KnockoutRound?                  // Current knockout round (if applicable)
+  knockoutLegs        Int?              @default(0)   // Number of play-off legs (1 for single-elimination, 2 for double-elimination)
 
-  teams             Team[]            @relation("TournamentTeams")
-  matches           Match[]           @relation("TournamentMatches")
-  stage             TournamentStage   @default(LEAGUE_STAGE) // Current stage of the tournament
+  teams               Team[]            @relation("TournamentTeams")
+  matches             Match[]           @relation("TournamentMatches")
+  knockoutTies        KnockoutTie[]
+  stage               TournamentStage   @default(LEAGUE_STAGE) // Current stage of the tournament
 
-  winnerUser        User?             @relation("WonTournaments", fields: [winnerUserId], references: [id])
-  winnerUserId      Int?
-  winnerTeam        String?
+  winnerUser          User?             @relation("WonTournaments", fields: [winnerUserId], references: [id])
+  winnerUserId        Int?
+  winnerTeam          String?
+
 }
 
 /// Type of tournament format:
@@ -159,8 +161,18 @@ model Match {
 
   stage          TournamentStage  // League, group or play-offs, etc.
   knockoutRound  KnockoutRound?
-
+  knockoutTie    KnockoutTie?     @relation(fields: [knockoutTieId], references: [id])
+  knockoutTieId  Int?
+      
   events         MatchEvent[]     // Who scored/assisted in this match
+}
+
+model KnockoutTie {
+  id            Int         @id @default(autoincrement())
+  tournament    Tournament  @relation(fields: [tournamentId], references: [id])
+  tournamentId  Int
+  matches       Match[]     // TODO: remove as it may not be needed after all (or swap with 'teams' instead?)
+  createdAt     DateTime    @default(now())
 }
 
 /// Details of who scored/assisted in a match

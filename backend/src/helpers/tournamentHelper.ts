@@ -1,18 +1,18 @@
-import { PrismaClient } from "@prisma/client";
-import { generateMatchFixtures } from '../helpers/matchFixturesHelper';
+import { PrismaClient, Prisma } from "@prisma/client";
+import { determineKnockoutRound, generateMatchFixtures } from '../helpers/matchFixturesHelper';
 
-export async function validateTournament(tournament: any) {
-  if (!tournament) 
+export async function validateTournamentPayload(tournamentPayload: any) {
+  if (!tournamentPayload) 
     throw { status: 400, message: 'No tournament data provided!' };
 
-  for (const key in tournament) {
-    if (tournament[key] === null || tournament[key] === undefined) 
+  for (const key in tournamentPayload) {
+    if (tournamentPayload[key] === null || tournamentPayload[key] === undefined) 
       throw { status: 400, message: `Tournament property ${key} is null or undefined!` };
   }
 }
 
-export async function createTournament(prisma: PrismaClient, userId: number, payload: any) {
-  const tournamentData = await prisma.tournament.create({
+export async function createTournament(transaction: Prisma.TransactionClient, userId: number, payload: any) { 
+  const tournamentData = await transaction.tournament.create({
     data: {
       ownerId: userId,
       name: payload.tournamentName,
@@ -23,11 +23,12 @@ export async function createTournament(prisma: PrismaClient, userId: number, pay
       groupsCount: payload.tournamentType === 'GROUP_AND_KNOCKOUT' ? payload.groupsCount : 0,
       topTeamsAdvancing: payload.tournamentType === 'GROUP_AND_KNOCKOUT' ? payload.teamsAdvancingPerGroup : 0,        
       knockoutLegs: payload.tournamentType !== 'LEAGUE' ? payload.knockoutLegs : 0,
+      knockoutRound: payload.tournamentType === 'CUP' ? determineKnockoutRound(payload.teamsCount) : null,
       stage: payload.tournamentType === 'LEAGUE'
         ? 'LEAGUE_STAGE'
         : payload.tournamentType === 'GROUP_AND_KNOCKOUT'
         ? 'GROUP_STAGE'
-        : 'KNOCKOUT_STAGE',
+        : 'KNOCKOUT_STAGE',    // CUP
     },
     include: {
       groups: true,
@@ -39,10 +40,40 @@ export async function createTournament(prisma: PrismaClient, userId: number, pay
   if (!tournamentData)
     throw { status: 500, message: 'Tournament creation failed!' };
 
+  // Create teams (and groups if need be)     
+  let teams, groups;
+  if (payload.tournamentType === 'LEAGUE' || payload.tournamentType === 'CUP')
+    teams = await createTeams(transaction, payload, tournamentData);
+  else if (payload.tournamentType === 'GROUP_AND_KNOCKOUT') 
+    [groups, teams] = await createGroupsAndTeams(transaction, payload, tournamentData);
+
+  // Generate match fixtures
+  if (teams && teams.length > 0) 
+    await generateMatchFixtures(transaction, tournamentData.id, payload.tournamentType, teams, groups || [], payload.matchesPerTeam, payload.knockoutLegs);
+
   return tournamentData;
 }
 
-export async function createGroupsAndTeams(payload: any, prisma: PrismaClient, tournamentData: any) {
+async function createTeams(transaction: Prisma.TransactionClient, payload: any, tournamentData: any) {
+  const createdTeams = await Promise.all(
+    payload.selectedTeams.map((teamName: string) => 
+      transaction.team.create({
+        data: {
+          name: teamName,
+          tournamentId: tournamentData.id,
+          groupId: null  // No group for LEAGUE or CUP tournaments
+        }
+      })
+    )
+  );
+
+  if (createdTeams.length !== payload.selectedTeams.length)
+    throw { status: 500, message: 'Creating teams failed!' };
+
+  return createdTeams;
+}
+
+async function createGroupsAndTeams(transaction: Prisma.TransactionClient, payload: any, tournamentData: any) {
   // Convert frontend groups object to array format
   const groupsArray = Object.entries(payload.groups).map(([groupName, teams]) => ({
     groupName,
@@ -52,7 +83,7 @@ export async function createGroupsAndTeams(payload: any, prisma: PrismaClient, t
   // Create groups first (one by one to get IDs)
   const createdGroups = await Promise.all(
     groupsArray.map(async (grp) => {
-      return await prisma.group.create({
+      return await transaction.group.create({
         data: {
           name: grp.groupName,
           tournamentId: tournamentData.id
@@ -81,32 +112,13 @@ export async function createGroupsAndTeams(payload: any, prisma: PrismaClient, t
   );
 
   const createdTeams = await Promise.all(
-    teamData.map(team => prisma.team.create({ data: team }))
+    teamData.map(team => transaction.team.create({ data: team }))
   );
 
   if (createdTeams.length !== teamData.length)
     throw { status: 500, message: 'Creating teams failed!' };
 
-  await generateMatchFixtures(tournamentData.id, payload.tournamentType, payload.matchesPerTeam, createdTeams, createdGroups);
-}
-
-export async function createTeamsOnly(payload: any, prisma: PrismaClient, tournamentData: any) {
-  const createdTeams = await Promise.all(
-    payload.selectedTeams.map((teamName: string) => 
-      prisma.team.create({
-        data: {
-          name: teamName,
-          tournamentId: tournamentData.id,
-          groupId: null  // No group for LEAGUE or CUP tournaments
-        }
-      })
-    )
-  );
-
-  if (createdTeams.length !== payload.selectedTeams.length)
-    throw { status: 500, message: 'Creating teams failed!' };
-
-  await generateMatchFixtures(tournamentData.id, payload.tournamentType, payload.matchesPerTeam, createdTeams);
+  return [createdGroups, createdTeams];
 }
 
 export async function fetchCreatedTournament(prisma: PrismaClient, tournamentData: any) {

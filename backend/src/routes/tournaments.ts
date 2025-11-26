@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './auth';
-import { validateTournament, createTournament, createGroupsAndTeams, createTeamsOnly, fetchCreatedTournament } from '../helpers/tournamentHelper';
-import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament } from '../helpers/matchReportHelper';
+import { validateTournamentPayload, createTournament, fetchCreatedTournament } from '../helpers/tournamentHelper';
+import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament, validateTournamentCompletion } from '../helpers/matchReportHelper';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -14,15 +14,11 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
 
     // Create tournament
-    await validateTournament(payload);
-    const tournamentData = await createTournament(prisma, userId, payload);
-
-    // Create teams (and groups if needed) based on tournament type    
-    if (payload.tournamentType === 'GROUP_AND_KNOCKOUT' && payload.groups) 
-      await createGroupsAndTeams(payload, prisma, tournamentData);
-    else if (payload.selectedTeams && payload.selectedTeams.length > 0)
-      await createTeamsOnly(payload, prisma, tournamentData);
-
+    await validateTournamentPayload(payload);
+    const tournamentData = await prisma.$transaction(async (transaction) => {
+      return await createTournament(transaction, userId, payload);
+    })
+    
     const fullTournamentData = await fetchCreatedTournament(prisma, tournamentData);
 
     return res.status(201).json(fullTournamentData);
@@ -119,7 +115,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   if (existingTournament.ownerId !== userId)
     return res.status(403).json({ error: 'You do not have permission to delete this tournament!' });
 
-  // Delete 
+  // Delete tournament and all related data
   await prisma.$transaction([
     // MatchEvents
     prisma.matchEvent.deleteMany({
@@ -127,6 +123,10 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
     }),
     // Matches
     prisma.match.deleteMany({
+      where: { tournamentId }
+    }),
+    // KnockoutTies
+    prisma.knockoutTie.deleteMany({
       where: { tournamentId }
     }),
     // Players (teams)
@@ -199,9 +199,13 @@ router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: 
       await updateMatch(transaction, matchId, homeScore, awayScore);
       await recomputePlayerStats(transaction, tournamentId);
       await recomputeTeamStats(transaction, tournamentId);
+      await validateTournamentCompletion(transaction, tournamentId);
     });
 
     const updatedTournament = await fetchUpdatedTournament(prisma, tournamentId);
+    if (!updatedTournament)
+      throw { status: 404, message: 'Tournament not found after match report was saved!' }; 
+
     return res.status(200).json(updatedTournament);
   }
   catch (error: any) {

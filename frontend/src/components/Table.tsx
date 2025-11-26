@@ -24,14 +24,14 @@ interface TableProps {
 
 export default function Table({ name, teams, topTeamsAdvancing, tournamentType }: TableProps) {
 
-  const sortedTeams = [...teams].sort((a, b) => {
-    if (b.points !== a.points)
-      return b.points - a.points;
+  const sortedTeams = [...teams].sort((teamA, teamB) => {
+    if (teamB.points !== teamA.points)
+      return teamB.points - teamA.points;
 
-    if (b.goalDifference !== a.goalDifference)
-      return b.goalDifference - a.goalDifference;
+    if (teamB.goalDifference !== teamA.goalDifference)
+      return teamB.goalDifference - teamA.goalDifference;
 
-    return b.goalsFor - a.goalsFor;
+    return teamB.goalsFor - teamA.goalsFor;
   });
 
   return ( 
