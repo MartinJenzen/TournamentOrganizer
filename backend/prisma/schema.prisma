@@ -163,6 +163,7 @@ model Match {
   knockoutRound  KnockoutRound?
   knockoutTie    KnockoutTie?     @relation(fields: [knockoutTieId], references: [id])
   knockoutTieId  Int?
+  legNumber      Int?             // Which leg of the knockout tie (1st or 2nd), if applicable
       
   events         MatchEvent[]     // Who scored/assisted in this match
 }

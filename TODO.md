@@ -3,7 +3,7 @@
 - Standardize color themes
 - More error handling
 - Clean up CSS (especially containers, Table.css and TournamentPage.css)
-- Error response messages to users
+- More error response messages to users
 - Add loading indicators while fetching data
 - Unit tests
 - More separation of concerns in \routes\tournaments.ts
@@ -13,9 +13,12 @@
   - Use consistent spacing and alignment
   - Improve color contrast and readability
   - Enhance button styles and interactions
-- Ensure that match reports won't accept draws in knockout stages
 - Optimize database queries to reduce latency (select only necessary fields)
 - Ensure returned status codes are correct (400 vs. 500)
-- Set default teams per group to 4, as well as teams advancing per group to 2
 - Transition to Prisma 7 (settings.json)
 - Stop group tables from being updated in Knockout phase
+- If an existing match report is edited (after having been played), the result of this change should be reflected in which team either advances from either a group or knockout tie 
+- Fix bug where the next knockout (maybe also regular) match is created within the previous match day, that was already played (related to editing existing match reports multiple times)
+- Show cup playoff tree/brackets on OrganizeTeamsPage
+- Fix bug that causes the side panel to be scrollable
+- In top players list for goals/assists: if two players with the same name exist, show their team as well (CHE, LIV, etc.) 

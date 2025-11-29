@@ -21,7 +21,6 @@
   flex-direction: column;
   gap: 1rem;
   animation: fadeIn .15s ease;
-  font-size: 0.9rem;
 }
 
 /* Header */
@@ -34,7 +33,6 @@
 
 .match-report-header h2 {
   margin: 0;
-  font-size: 1.05rem;
 }
 
 .close-btn {
@@ -47,6 +45,13 @@
   color: #444;
 }
 .close-btn:hover { color: #000; }
+
+.match-report-subtitle {
+  font-size: 1.2rem;
+  margin-top: -0.5rem;
+  margin-bottom: -0.5rem;
+  text-align: center;
+}
 
 .score-summary {
   display: grid;

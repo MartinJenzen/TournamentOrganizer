@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, KnockoutRound } from '@prisma/client';
 import { generateInitialKnockoutMatchesFromGroups, generateNextRoundOfKnockoutMatches } from '../helpers/matchFixturesHelper';
 
 export async function validateMatchReport(prisma: PrismaClient, tournamentId: number, matchId: number, events: any[]) {
@@ -43,6 +43,70 @@ export async function updateMatch(transaction: Prisma.TransactionClient, matchId
     where: { id: matchId },
     data: { homeScore, awayScore, played: true }
   });
+}
+
+export async function ensureKnockoutTieResolved(transaction: Prisma.TransactionClient, tournamentId: number, matchId: number, homeScore: number, awayScore: number) {
+
+  const match = await transaction.match.findUnique({
+    where: { id: matchId },
+    select: { 
+      id: true,
+      tournamentId: true,
+      stage: true,
+      knockoutRound: true,
+      legNumber: true,
+      knockoutTieId: true,
+      homeTeamId: true,
+      awayTeamId: true
+    }
+  })
+
+  if (!match) 
+    throw { status: 404, message: 'Match not found!' };
+
+  if (match.stage !== 'KNOCKOUT_STAGE')
+    return;
+
+  const tournament = await transaction.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { knockoutLegs: true }
+  });
+
+  const knockoutLegs = tournament?.knockoutLegs;
+  if (!knockoutLegs)
+    throw { status: 500, message: 'Knockout legs info not found for tournament!' };
+
+  if (match.knockoutRound === 'FINAL') {
+    if (homeScore === awayScore)
+      throw { status: 400, message: 'The final may not end in a draw!' };
+  }
+  else if (knockoutLegs === 1) {
+    if (homeScore === awayScore)
+      throw { status: 400, message: 'Single-leg knockout match may not end in a draw!' };
+  }
+  else if (knockoutLegs === 2) {
+    if (!match.knockoutTieId)
+      return;
+
+    const tieMatches = await transaction.match.findMany({
+      where: { knockoutTieId: match.knockoutTieId },
+      select: { id: true, legNumber: true, homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, played: true }
+    });
+
+    if (tieMatches.length > 2)
+      throw { status: 500, message: 'More than two matches found for knockout tie!' };
+
+    const oppositeLegPlayed = tieMatches.find(tieMatch => tieMatch.id !== matchId && tieMatch.played);
+
+    if (!oppositeLegPlayed || !oppositeLegPlayed.played)
+      return;
+
+    const teamA_scoreAggregate = homeScore + oppositeLegPlayed.awayScore;
+    const teamB_scoreAggregate = awayScore + oppositeLegPlayed.homeScore;
+
+    if (teamA_scoreAggregate === teamB_scoreAggregate)
+      throw { status: 400, message: 'Two-legged knockout tie may not end in an aggregate draw!' };
+  }
 }
 
 export async function recomputePlayerStats(transaction: Prisma.TransactionClient, tournamentId: number) {

@@ -28,7 +28,7 @@ export type ModalProps = {
  ** onConfirm:  callback invoked with form data or undefined
  ** onCancel:   callback invoked when the user cancels or closes
  */
-export default function UniversalModal({ isOpen, mode, title, message, confirmButtonText, isDangerous, onConfirm, onCancel }: ModalProps) {
+export default function UniversalModal({ isOpen, mode, title, message, confirmButtonText, isDangerous = false, onConfirm, onCancel }: ModalProps) {
   
   const initialForm = { email: '', password: '', username: '' }
   const firstInputFieldRef = useRef<HTMLInputElement>(null);

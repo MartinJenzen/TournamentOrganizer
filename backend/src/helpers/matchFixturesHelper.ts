@@ -53,7 +53,7 @@ function roundRobinScheduling(tournamentId: number, teams: any[], matchesPerTeam
           if (!homeTeam || !awayTeam) 
             continue;
       
-          const firstLeg = buildMatch(tournamentId, homeTeam.id, awayTeam.id, matchDay + 1, tournamentStage);
+          const firstLeg = buildMatch(tournamentId, homeTeam.id, awayTeam.id, matchDay + 1, tournamentStage, 1);
           
           matches.push(firstLeg);
           matchDayMatches.push(firstLeg);
@@ -74,7 +74,7 @@ function roundRobinScheduling(tournamentId: number, teams: any[], matchesPerTeam
         const firstLegRoundMatches = firstLegMatches[matchDay];
         
         for (const firstLegMatch of firstLegRoundMatches) {
-          const secondLeg = buildMatch(tournamentId, firstLegMatch.awayTeamId, firstLegMatch.homeTeamId, (leg * matchDays) + (matchDays - matchDay), tournamentStage);
+          const secondLeg = buildMatch(tournamentId, firstLegMatch.awayTeamId, firstLegMatch.homeTeamId, (leg * matchDays) + (matchDays - matchDay), tournamentStage, 2);
           matches.push(secondLeg);
         }
       }
@@ -84,7 +84,7 @@ function roundRobinScheduling(tournamentId: number, teams: any[], matchesPerTeam
   return matches;
 }
 
-function buildMatch(tournamentId: number, homeTeamId: number, awayTeamId: number, matchDay: number, stage: string, knockoutRound?: KnockoutRound, knockoutTieId?: number) {
+function buildMatch(tournamentId: number, homeTeamId: number, awayTeamId: number, matchDay: number, stage: string, legNumber?: number, knockoutRound?: KnockoutRound, knockoutTieId?: number) {
   return {
     tournamentId,
     homeTeamId,
@@ -92,7 +92,8 @@ function buildMatch(tournamentId: number, homeTeamId: number, awayTeamId: number
     matchDay,
     stage,
     knockoutRound,
-    knockoutTieId
+    knockoutTieId,
+    legNumber
   };
 }
   
@@ -118,12 +119,12 @@ async function generateFirstRoundOfCupFixtures(transaction: Prisma.TransactionCl
     // For potential two-legged knockout games
     const knockoutTie = await createKnockoutTie(transaction, tournamentId, knockoutLegs, firstKnockoutRound);
 
-    const firstLeg = buildMatch(tournamentId, teams[i].id, teams[i + 1].id, 1, 'KNOCKOUT_STAGE', firstKnockoutRound, knockoutTie?.id)
+    const firstLeg = buildMatch(tournamentId, teams[i].id, teams[i + 1].id, 1, 'KNOCKOUT_STAGE', 1, firstKnockoutRound, knockoutTie?.id)
     matches.push(firstLeg);
 
     // And second leg if needed
     if (knockoutTie) {
-      const secondLeg = buildMatch(tournamentId, teams[i + 1].id, teams[i].id, 2, 'KNOCKOUT_STAGE', firstKnockoutRound, knockoutTie?.id);
+      const secondLeg = buildMatch(tournamentId, teams[i + 1].id, teams[i].id, 2, 'KNOCKOUT_STAGE', 2, firstKnockoutRound, knockoutTie?.id);
       matches.push(secondLeg);
     }
   }
@@ -168,12 +169,12 @@ export async function generateInitialKnockoutMatchesFromGroups(transaction: Pris
         // For potential two-legged knockout games
         const knockoutTie = await createKnockoutTie(transaction, tournament.id, knockoutLegs, initialKnockoutRound);
 
-        const firstLeg = buildMatch(tournament.id, teamX.id, teamY.id, nextMatchDay, 'KNOCKOUT_STAGE', initialKnockoutRound, knockoutTie?.id)
+        const firstLeg = buildMatch(tournament.id, teamX.id, teamY.id, nextMatchDay, 'KNOCKOUT_STAGE', 1, initialKnockoutRound, knockoutTie?.id)
         initialKnockoutMatches.push(firstLeg);
 
         // And second leg if needed
         if (knockoutTie) {
-          const secondLeg = buildMatch(tournament.id, teamY.id, teamX.id, nextMatchDay + 1, 'KNOCKOUT_STAGE', initialKnockoutRound, knockoutTie?.id);
+          const secondLeg = buildMatch(tournament.id, teamY.id, teamX.id, nextMatchDay + 1, 'KNOCKOUT_STAGE', 2, initialKnockoutRound, knockoutTie?.id);
           initialKnockoutMatches.push(secondLeg);
         }
       }
@@ -193,12 +194,12 @@ export async function generateInitialKnockoutMatchesFromGroups(transaction: Pris
           // For potential two-legged knockout games
           const knockoutTie = await createKnockoutTie(transaction, tournament.id, knockoutLegs, initialKnockoutRound);
 
-          const firstLeg = buildMatch(tournament.id, teamX.id, teamY.id, nextMatchDay, 'KNOCKOUT_STAGE', initialKnockoutRound, knockoutTie?.id)
+          const firstLeg = buildMatch(tournament.id, teamX.id, teamY.id, nextMatchDay, 'KNOCKOUT_STAGE', 1, initialKnockoutRound, knockoutTie?.id)
           initialKnockoutMatches.push(firstLeg);
 
           // And second leg if needed
           if (knockoutTie) {
-            const secondLeg = buildMatch(tournament.id, teamY.id, teamX.id, nextMatchDay + 1, 'KNOCKOUT_STAGE', initialKnockoutRound, knockoutTie?.id);
+            const secondLeg = buildMatch(tournament.id, teamY.id, teamX.id, nextMatchDay + 1, 'KNOCKOUT_STAGE', 2, initialKnockoutRound, knockoutTie?.id);
             initialKnockoutMatches.push(secondLeg);
           }
         }
@@ -216,12 +217,12 @@ export async function generateInitialKnockoutMatchesFromGroups(transaction: Pris
         // For potential two-legged knockout games
         const knockoutTie = await createKnockoutTie(transaction, tournament.id, knockoutLegs, initialKnockoutRound);
 
-        const firstLeg = buildMatch(tournament.id, teamX.id, teamY.id, nextMatchDay, 'KNOCKOUT_STAGE', initialKnockoutRound, knockoutTie?.id)
+        const firstLeg = buildMatch(tournament.id, teamX.id, teamY.id, nextMatchDay, 'KNOCKOUT_STAGE', 1, initialKnockoutRound, knockoutTie?.id)
         initialKnockoutMatches.push(firstLeg);
 
         // And second leg if needed
         if (knockoutTie) {
-          const secondLeg = buildMatch(tournament.id, teamY.id, teamX.id, nextMatchDay + 1, 'KNOCKOUT_STAGE', initialKnockoutRound, knockoutTie?.id);
+          const secondLeg = buildMatch(tournament.id, teamY.id, teamX.id, nextMatchDay + 1, 'KNOCKOUT_STAGE', 2, initialKnockoutRound, knockoutTie?.id);
           initialKnockoutMatches.push(secondLeg);
         }
       }
@@ -267,12 +268,12 @@ export async function generateNextRoundOfKnockoutMatches(transaction: Prisma.Tra
     // For potential two-legged knockout games
     const knockoutTie = await createKnockoutTie(transaction, tournament.id, tournament.knockoutLegs, nextKnockoutRound);
 
-    const firstLeg = buildMatch(tournament.id, advancingTeams[i].id, advancingTeams[i + 1].id, nextMatchDay, 'KNOCKOUT_STAGE', nextKnockoutRound, knockoutTie?.id)
+    const firstLeg = buildMatch(tournament.id, advancingTeams[i].id, advancingTeams[i + 1].id, nextMatchDay, 'KNOCKOUT_STAGE', 1, nextKnockoutRound, knockoutTie?.id)
     nextRoundMatches.push(firstLeg);
 
     // And second leg if needed
     if (knockoutTie) {
-      const secondLeg = buildMatch(tournament.id, advancingTeams[i + 1].id, advancingTeams[i].id, nextMatchDay + 1, 'KNOCKOUT_STAGE', nextKnockoutRound, knockoutTie?.id);
+      const secondLeg = buildMatch(tournament.id, advancingTeams[i + 1].id, advancingTeams[i].id, nextMatchDay + 1, 'KNOCKOUT_STAGE', 2, nextKnockoutRound, knockoutTie?.id);
       nextRoundMatches.push(secondLeg);
     }
   }

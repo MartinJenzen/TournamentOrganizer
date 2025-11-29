@@ -78,6 +78,9 @@ export interface Match {
   awayScore: number;
   matchDay: number;
   stage: string;
+  knockoutRound?: string;
+  knockoutTieId?: number;
+  legNumber?: number;
   played: boolean;
   events?: Array<{
     id: number;

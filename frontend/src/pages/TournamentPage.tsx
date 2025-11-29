@@ -4,6 +4,7 @@ import { saveMatchReport } from '../services/tournamentService';
 import '../styles/TournamentPage.css';
 import Table from '../components/Table';
 import MatchReportModal from '../components/MatchReportModal';
+import UniversalModal from '../components/UniversalModal';
 
 export default function TournamentPage() {
   const { tournament, setTournament } = useTournamentContext();
@@ -21,6 +22,12 @@ export default function TournamentPage() {
   const [showMatchReportModal, setShowMatchReportModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
+  // UniversalModal
+  const [showUniversalModal, setShowUniversalModal] = useState(false);
+  const [universalModalMode, setUniversalModalMode] = useState<'info'>('info');
+  const [universalModalTitle, setUniversalModalTitle] = useState<string>('');
+  const [universalModalMessage, setUniversalModalMessage] = useState<string>('');
+  
   const allPlayers = useMemo(() => {
     if (!tournament)
       return [];
@@ -116,22 +123,26 @@ export default function TournamentPage() {
 
   async function handleSaveMatchReport(matchReport: any) {
     try {
-      if (!tournament || !matchReport.matchId) {
-        console.error("Tournament or match ID is missing");
-        return;
-      }
-
+      if (!tournament || !matchReport.matchId) 
+        throw new Error("Whoops, something went wrong. \nTournament or Match ID is missing!");
+      
       const updatedTournament = await saveMatchReport(tournament.id, matchReport);
       setTournament(updatedTournament);
+
+      setShowMatchReportModal(false);
+      setSelectedMatch(null);
     } 
     catch (error) {
       console.error("Error saving match:", error);
-      alert("Failed to save match report. Please try again.");
+      drawErrorModal(error instanceof Error ? error.message : 'Failed to save match report! Please try again.');
     }
-    finally {
-      setShowMatchReportModal(false);
-      setSelectedMatch(null);
-    }
+  }
+
+  function drawErrorModal(message: string) {
+    setShowUniversalModal(true);
+    setUniversalModalMode('info');
+    setUniversalModalTitle('Error!'); // TODO: ⚠️❌🚫?
+    setUniversalModalMessage(message);
   }
 
   if (!tournament)
@@ -324,8 +335,16 @@ export default function TournamentPage() {
         />
       )}
 
+      {showUniversalModal && (
+        <UniversalModal
+          isOpen={showUniversalModal}
+          mode={universalModalMode}
+          title={universalModalTitle}
+          message={universalModalMessage}
+          onConfirm={() => setShowUniversalModal(false)}
+          onCancel={() => setShowUniversalModal(false)}
+        />
+      )}
     </div>
-        
-
   );
 } 

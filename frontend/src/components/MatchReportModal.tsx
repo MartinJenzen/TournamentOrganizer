@@ -3,6 +3,7 @@ import '../styles/MatchReportModal.css';
 import { useTournamentContext} from '../context/TournamentContext';
 import { createPlayer } from '../services/tournamentService';
 import type { Match } from '../context/TournamentContext';
+import UniversalModal from './UniversalModal';
 
 interface MatchReportModalProps {
   isOpen: boolean;
@@ -35,6 +36,21 @@ interface PlayerEntry {
 export default function MatchReportModal({ isOpen, match, onCancel, onSave }: MatchReportModalProps) {
   const { tournament } = useTournamentContext();
   const MAX_STAT = 99;
+
+  const KNOCKOUT_ROUND_LABELS: Record<string, string> = {
+    ROUND_OF_64: 'Round of 64',
+    ROUND_OF_32: 'Round of 32',
+    ROUND_OF_16: 'Round of 16',
+    QUARTER_FINALS: 'Quarter-final',
+    SEMI_FINALS: 'Semi-final',
+    FINAL: 'Final'
+  }
+
+  // UniversalModal
+  const [showUniversalModal, setShowUniversalModal] = useState(false);
+  const [universalModalMode, setUniversalModalMode] = useState<'info'>('info');
+  const [universalModalTitle, setUniversalModalTitle] = useState<string>('');
+  const [universalModalMessage, setUniversalModalMessage] = useState<string>('');
 
   // Get full team details
   const homeTeam = tournament?.teams.find(team => team.id === match.homeTeam.id);
@@ -150,7 +166,7 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
     const invalidInputsError = validateInputs();
     
     if (invalidInputsError) {
-      alert(invalidInputsError);
+      drawInvalidInputsModal(invalidInputsError);
       return;
     }
 
@@ -167,6 +183,13 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
         away: generateMatchEvents(finalAway)
       }
     });
+  }
+
+  function drawInvalidInputsModal(message: string) {
+    setShowUniversalModal(true);
+    setUniversalModalMode('info');
+    setUniversalModalTitle('Error!'); // TODO: ⚠️❌🚫?
+    setUniversalModalMessage(message);
   }
 
   function validateInputs(): string | null {
@@ -253,6 +276,20 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
     return events;
   }
 
+  function formatLegNumberString(knockoutTieId?: number, legNumber?: number, knockoutRound?: string): string {
+    if (!knockoutTieId || knockoutRound === "FINAL" || !legNumber || legNumber < 1 || legNumber > 2) 
+      return '';
+
+    let legText = ' - ';
+
+    if (legNumber === 1) 
+      legText += '1st leg';
+    else if (legNumber === 2) 
+      legText += '2nd leg';
+
+    return legText;
+  }
+
   if (!isOpen) 
     return null;
 
@@ -266,6 +303,13 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
           <button className="close-btn" onClick={onCancel}>×</button>
         </header>
 
+        {/* Subtitle (knockout round and leg, if applicable) */}
+        {(match.stage === 'KNOCKOUT_STAGE') && (
+          <h3 className="match-report-subtitle">
+            {KNOCKOUT_ROUND_LABELS[match.knockoutRound as string] + formatLegNumberString(match.knockoutTieId, match.legNumber, match.knockoutRound)} 
+          </h3>
+        )}
+
         {/* Home and away team scores */}
         <section className="score-summary">
           <span className="home-team">{match.homeTeam.name}</span>
@@ -274,7 +318,7 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
               type="number"
               min={0}
               max={99}
-              // className="goals-input"
+              // className="goals-input" // TODO: remove or change to?
               className="home-score-input"
               value={derivedHomeScore || homeScore}
               onChange={event => setHomeScore(Number(event.target.value))}
@@ -288,7 +332,7 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
               type="number"
               min={0}
               max={99}
-              // className="goals-input"
+              // className="goals-input" // TODO: remove or change to?
               className="away-score-input"
               value={derivedAwayScore || awayScore}
               onChange={event => setAwayScore(Number(event.target.value))}
@@ -442,6 +486,17 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
           <button className="primary" onClick={handleSave}>Save Report</button>
         </footer>
       </div>
+      
+      {showUniversalModal && (
+        <UniversalModal
+          isOpen={showUniversalModal}
+          mode={universalModalMode}
+          title={universalModalTitle}
+          message={universalModalMessage}
+          onConfirm={() => setShowUniversalModal(false)}
+          onCancel={() => setShowUniversalModal(false)}
+        />
+      )}
     </div>
   );
 }

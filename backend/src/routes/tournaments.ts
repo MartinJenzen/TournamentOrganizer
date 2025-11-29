@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from './auth';
 import { validateTournamentPayload, createTournament, fetchCreatedTournament } from '../helpers/tournamentHelper';
-import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament, validateTournamentCompletion } from '../helpers/matchReportHelper';
+import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament, validateTournamentCompletion, ensureKnockoutTieResolved } from '../helpers/matchReportHelper';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -195,6 +195,7 @@ router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: 
 
     // Run all changes inside a transaction so updates are atomic
     await prisma.$transaction(async (transaction) => {
+      await ensureKnockoutTieResolved(transaction, tournamentId, matchId, homeScore, awayScore);
       await replaceMatchEvents(transaction, matchId, events);
       await updateMatch(transaction, matchId, homeScore, awayScore);
       await recomputePlayerStats(transaction, tournamentId);
