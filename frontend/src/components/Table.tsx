@@ -4,15 +4,15 @@ import '../styles/Table.css';
 interface TeamStats {
   id: number;
   name: string;
-  gamesPlayed: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  goalsFor: number;
-  goalsAgainst: number;
-  goalDifference: number;
-  points: number;
-  position?: number;
+  tGamesPlayed: number;
+  tWins: number;
+  tDraws: number;
+  tLosses: number;
+  tGoalsFor: number;
+  tGoalsAgainst: number;
+  tGoalDifference: number;
+  tPoints: number;
+  tPosition?: number;
 }
 
 interface TableProps {
@@ -24,7 +24,22 @@ interface TableProps {
 
 export default function Table({ name, teams, topTeamsAdvancing, tournamentType }: TableProps) {
 
-  const sortedTeams = [...teams].sort((teamA, teamB) => {
+  // Remap backend stats (tWins, tDraws, etc.) to frontend props (wins, draws, etc.)
+  const remappedTeams = teams.map(team => ({
+    id: team.id,
+    name: team.name,
+    gamesPlayed: team.tGamesPlayed,
+    wins: team.tWins,
+    draws: team.tDraws,
+    losses: team.tLosses,
+    goalsFor: team.tGoalsFor,
+    goalsAgainst: team.tGoalsAgainst,
+    goalDifference: team.tGoalDifference,
+    points: team.tPoints,
+    position: team.tPosition
+  }));
+
+  const sortedTeams = [...remappedTeams].sort((teamA, teamB) => {
     if (teamB.points !== teamA.points)
       return teamB.points - teamA.points;
 

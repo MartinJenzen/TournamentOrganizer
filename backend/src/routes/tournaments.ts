@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Tournament, TournamentStage } from '@prisma/client';
 import { requireAuth } from './auth';
 import { validateTournamentPayload, createTournament, fetchCreatedTournament } from '../helpers/tournamentHelper';
 import { validateMatchReport, replaceMatchEvents, updateMatch, recomputePlayerStats, recomputeTeamStats, fetchUpdatedTournament, validateTournamentCompletion, ensureKnockoutTieResolved } from '../helpers/matchReportHelper';
@@ -180,9 +180,10 @@ router.get('/:id/fixtures', requireAuth, async (req: Request, res: Response) => 
 router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: Request, res: Response) => {
   const tournamentId = Number(req.params.tournamentId);
   const matchId = Number(req.params.matchId);
-  const { homeScore, awayScore, events } = req.body as {
+  const { homeScore, awayScore, events, tournamentStage } = req.body as {
     homeScore: number;
     awayScore: number;
+    tournamentStage: TournamentStage;
     events: { 
       playerId: number; 
       type: 'GOAL' | 'ASSIST'; 
@@ -191,7 +192,7 @@ router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: 
   };
 
   try {
-    await validateMatchReport(prisma, tournamentId, matchId, events);
+    await validateMatchReport(prisma, tournamentId, matchId, events, tournamentStage);
 
     // Run all changes inside a transaction so updates are atomic
     await prisma.$transaction(async (transaction) => {
@@ -199,7 +200,7 @@ router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: 
       await replaceMatchEvents(transaction, matchId, events);
       await updateMatch(transaction, matchId, homeScore, awayScore);
       await recomputePlayerStats(transaction, tournamentId);
-      await recomputeTeamStats(transaction, tournamentId);
+      await recomputeTeamStats(transaction, tournamentId, tournamentStage);
       await validateTournamentCompletion(transaction, tournamentId);
     });
 

@@ -17,6 +17,7 @@ interface MatchReportModalProps {
       home: MatchEvent[];
       away: MatchEvent[];
     };
+    tournamentStage: string;
   }) => void;
 }
 
@@ -181,7 +182,8 @@ export default function MatchReportModal({ isOpen, match, onCancel, onSave }: Ma
       events: {
         home: generateMatchEvents(finalHome),
         away: generateMatchEvents(finalAway)
-      }
+      },
+      tournamentStage: match.stage
     });
   }
 

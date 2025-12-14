@@ -29,13 +29,15 @@ export async function saveMatchReport(tournamentId: number, matchReport: {
     home: { playerId: number; type: 'GOAL' | 'ASSIST'; amount: number }[];
     away: { playerId: number; type: 'GOAL' | 'ASSIST'; amount: number }[];
   };
+  tournamentStage: string;
 }) {
   const flatEvents = [...matchReport.events.home, ...matchReport.events.away];
   const { data: updatedTournament } = await api.patch(`/tournaments/${tournamentId}/matches/${matchReport.matchId}/report`,
     {
       homeScore: matchReport.homeScore,
       awayScore: matchReport.awayScore,
-      events: flatEvents
+      events: flatEvents,
+      tournamentStage: matchReport.tournamentStage
     }
   );
   return updatedTournament;

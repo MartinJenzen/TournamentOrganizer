@@ -31,14 +31,14 @@ export interface Tournament {
     id: number;
     name: string;
     groupId?: number;
-    gamesPlayed: 0,
-    wins:        0,
-    draws:       0,
-    losses:      0,
-    goalsFor:    0,
-    goalsAgainst:0,
-    goalDifference: 0,
-    points:      0,
+    tGamesPlayed: 0,
+    tWins: 0,
+    tDraws: 0,
+    tLosses: 0,
+    tGoalsFor: 0,
+    tGoalsAgainst: 0,
+    tGoalDifference: 0,
+    tPoints: 0,
     players: Array<{
       id: number;
       name: string;

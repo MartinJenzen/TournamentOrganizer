@@ -1,7 +1,7 @@
-import { PrismaClient, Prisma, KnockoutRound } from '@prisma/client';
+import { PrismaClient, Prisma, TournamentStage } from '@prisma/client';
 import { generateInitialKnockoutMatchesFromGroups, generateNextRoundOfKnockoutMatches } from '../helpers/matchFixturesHelper';
 
-export async function validateMatchReport(prisma: PrismaClient, tournamentId: number, matchId: number, events: any[]) {
+export async function validateMatchReport(prisma: PrismaClient, tournamentId: number, matchId: number, events: any[], tournamentStage: TournamentStage) {
   if (!Number.isInteger(matchId) || !Number.isInteger(tournamentId))
     throw { status: 400, message: 'Invalid match or tournament ID!' };
 
@@ -15,6 +15,9 @@ export async function validateMatchReport(prisma: PrismaClient, tournamentId: nu
 
   if (!match || match.tournamentId !== tournamentId)
     throw { status: 404, message: 'Match not found in tournament!' };
+
+  if (!tournamentStage)
+    throw { status: 400, message: 'Tournament stage is required!' };
 
   return match;
 }
@@ -109,6 +112,7 @@ export async function ensureKnockoutTieResolved(transaction: Prisma.TransactionC
   }
 }
 
+// TODO: Optimize recompute functions to only update affected players/teams instead of all tournament players/teams
 export async function recomputePlayerStats(transaction: Prisma.TransactionClient, tournamentId: number) {
   // Reset all tournament player stats before being recomputed...
   // Avoids incremental update complexity and makes operation idempotent to prevent double-counting if match report is later changed
@@ -135,20 +139,13 @@ export async function recomputePlayerStats(transaction: Prisma.TransactionClient
   }
 }
 
-// TODO: adapt to knockout stages (don't update team stats for group tables)
-export async function recomputeTeamStats(transaction: Prisma.TransactionClient, tournamentId: number) {
-  // Reset all tournament teams stats before being recomputed...
-  // Avoids incremental update complexity, making it simpler than trying to adjust only the affected teams
-  await transaction.team.updateMany({
-    where: { tournamentId },
-    data: {
-      gamesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, position: null
-    }
-  });
+// TODO: Optimize recompute functions to only update affected players/teams instead of all tournament players/teams
+export async function recomputeTeamStats(transaction: Prisma.TransactionClient, tournamentId: number, tournamentStage: TournamentStage) {
+  await resetTeamStats(transaction, tournamentId, tournamentStage);
 
   // Load all played matches in tournament before being recomputed...
   const playedMatches = await transaction.match.findMany({
-    where: { tournamentId, played: true },
+    where: { tournamentId, played: true, stage: tournamentStage },
     select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true }
   });
 
@@ -189,29 +186,86 @@ export async function recomputeTeamStats(transaction: Prisma.TransactionClient, 
     }
   }
 
-  // Persist recomputed team stats back to DB
-  for (const [teamId, teamStat] of teamStats) {
-    await transaction.team.update({
-      where: { id: teamId },
-      data: {
-        gamesPlayed: teamStat.gamesPlayed,
-        wins: teamStat.wins,
-        draws: teamStat.draws,
-        losses: teamStat.losses,
-        goalsFor: teamStat.goalsFor,
-        goalsAgainst: teamStat.goalsAgainst,
-        goalDifference: teamStat.goalsFor - teamStat.goalsAgainst,
-        points: teamStat.wins * 3 + teamStat.draws
-      }
-    });
-  }
+  await updateTeamStats(transaction, tournamentId, tournamentStage, teamStats);
 
-  // Recompute team positions in league/group table
   await recomputeTeamPositions(transaction, tournamentId);
 }
 
+// Reset all tournament teams stats before being recomputed...
+// Avoids incremental update complexity, making it simpler than trying to adjust only the affected teams
+async function resetTeamStats(transaction: Prisma.TransactionClient, tournamentId: number, tournamentStage: TournamentStage) {
+
+  if (tournamentStage === 'GROUP_STAGE' || tournamentStage === 'LEAGUE_STAGE') {
+    await transaction.team.updateMany({
+      where: { tournamentId },
+      data: {
+        tGamesPlayed: 0, tWins: 0, tDraws: 0, tLosses: 0, tGoalsFor: 0, tGoalsAgainst: 0, tGoalDifference: 0, tPoints: 0, tPosition: null
+      }
+    });
+  }
+  else if (tournamentStage === 'KNOCKOUT_STAGE') {
+    await transaction.team.updateMany({
+      where: { tournamentId },
+      data: {
+        kGamesPlayed: 0, kWins: 0, kDraws: 0, kLosses: 0, kGoalsFor: 0, kGoalsAgainst: 0, kGoalDifference: 0, kPoints: 0
+      }
+    });
+  }
+}
+
+// Persist recomputed team stats back to DB
+async function updateTeamStats(transaction: Prisma.TransactionClient, tournamentId: number, tournamentStage: TournamentStage, statsToPersists: Map<number, { 
+    gamesPlayed: number; 
+    wins: number;
+    draws: number;
+    losses: number;
+    goalsFor: number;
+    goalsAgainst: number;
+  }>) {
+
+  for (const [teamId, teamStat] of statsToPersists) { 
+    if (tournamentStage === 'GROUP_STAGE' || tournamentStage === 'LEAGUE_STAGE') {
+      await transaction.team.update({
+        where: { id: teamId },
+        data: {
+          tGamesPlayed: teamStat.gamesPlayed,
+          tWins: teamStat.wins,
+          tDraws: teamStat.draws,
+          tLosses: teamStat.losses,
+          tGoalsFor: teamStat.goalsFor,
+          tGoalsAgainst: teamStat.goalsAgainst,
+          tGoalDifference: teamStat.goalsFor - teamStat.goalsAgainst,
+          tPoints: teamStat.wins * 3 + teamStat.draws
+        }
+      });
+    }
+    else if (tournamentStage === 'KNOCKOUT_STAGE') {
+      await transaction.team.update({
+        where: { id: teamId },
+        data: {
+          kGamesPlayed: teamStat.gamesPlayed,
+          kWins: teamStat.wins,
+          kDraws: teamStat.draws,
+          kLosses: teamStat.losses,
+          kGoalsFor: teamStat.goalsFor,
+          kGoalsAgainst: teamStat.goalsAgainst,
+          kGoalDifference: teamStat.goalsFor - teamStat.goalsAgainst,
+          kPoints: teamStat.wins * 3 + teamStat.draws
+        }
+      });
+    }
+  }
+}
+
 // Helper to get or initialize team stats
-function getOrInitializeTeamStats(teamId: number, teamStats: Map<number, { gamesPlayed: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number }>) {
+function getOrInitializeTeamStats(teamId: number, teamStats: Map<number, { 
+    gamesPlayed: number; 
+    wins: number; 
+    draws: number; 
+    losses: number; 
+    goalsFor: number; 
+    goalsAgainst: number 
+  }>) {
   
   if (!teamStats.has(teamId)) 
     teamStats.set(teamId, { gamesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 });
@@ -219,7 +273,7 @@ function getOrInitializeTeamStats(teamId: number, teamStats: Map<number, { games
   return teamStats.get(teamId)!;
 };
 
-// Helper to calculate table positions based on points, goal difference and goals for
+// Recompute team positions in league/group table
 async function recomputeTeamPositions(transaction: Prisma.TransactionClient, tournamentId: number) {
 
   const tournamentType = (await transaction.tournament.findUnique({
@@ -234,16 +288,16 @@ async function recomputeTeamPositions(transaction: Prisma.TransactionClient, tou
     const teams = await transaction.team.findMany({
       where: { tournamentId },
       orderBy: [
-        { points: 'desc' },
-        { goalDifference: 'desc' },
-        { goalsFor: 'desc' }
+        { tPoints: 'desc' },
+        { tGoalDifference: 'desc' },
+        { tGoalsFor: 'desc' }
       ]
     });
     
     for (let i = 0; i < teams.length; i++) {
       await transaction.team.update({
         where: { id: teams[i].id },
-        data: { position: i + 1 }
+        data: { tPosition: i + 1 }
       });
     }
   }
@@ -255,19 +309,18 @@ async function recomputeTeamPositions(transaction: Prisma.TransactionClient, tou
 
     for (const group of groups) {
       group.teams.sort((teamA, teamB) => {
-        if (teamB.points !== teamA.points)
-          return teamB.points - teamA.points;
+        if (teamB.tPoints !== teamA.tPoints)
+          return teamB.tPoints - teamA.tPoints;
 
-        if (teamB.goalDifference !== teamA.goalDifference)
-          return teamB.goalDifference - teamA.goalDifference;
-
-        return teamB.goalsFor - teamA.goalsFor;
+        if (teamB.tGoalDifference !== teamA.tGoalDifference)
+          return teamB.tGoalDifference - teamA.tGoalDifference;
+        return teamB.tGoalsFor - teamA.tGoalsFor;
       });
 
       for (let i = 0; i < group.teams.length; i++) {
         await transaction.team.update({
           where: { id: group.teams[i].id },
-          data: { position: i + 1 }
+          data: { tPosition: i + 1 }
         });
       }
     }

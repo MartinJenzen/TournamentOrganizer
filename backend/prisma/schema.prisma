@@ -97,29 +97,40 @@ enum KnockoutRound {
 
 /// A per-tournament football team
 model Team {
-  id             Int        @id @default(autoincrement())
-  name           String
-  tournament     Tournament @relation("TournamentTeams", fields: [tournamentId], references: [id])
-  tournamentId   Int
-  user           User?      @relation(fields: [userId], references: [id])
-  userId         Int?
+  id              Int         @id @default(autoincrement())
+  name            String
+  tournament      Tournament  @relation("TournamentTeams", fields: [tournamentId], references: [id])
+  tournamentId    Int
+  user            User?       @relation(fields: [userId], references: [id])
+  userId          Int?
 
-  gamesPlayed    Int        @default(0)
-  wins           Int        @default(0)
-  draws          Int        @default(0)
-  losses         Int        @default(0)
-  goalsFor       Int        @default(0)
-  goalsAgainst   Int        @default(0)
-  goalDifference Int        @default(0)
-  points         Int        @default(0)
+  // Table stats (league/group)
+  tGamesPlayed    Int         @default(0)
+  tWins           Int         @default(0)
+  tDraws          Int         @default(0)
+  tLosses         Int         @default(0)
+  tGoalsFor       Int         @default(0)
+  tGoalsAgainst   Int         @default(0)
+  tGoalDifference Int         @default(0)
+  tPoints         Int         @default(0)
+  tPosition       Int?
 
-  group          Group?     @relation(fields: [groupId], references: [id])
-  groupId        Int?
-  position       Int?       // Position in group or league table
+  // Knockout stats
+  kGamesPlayed    Int         @default(0)
+  kWins           Int         @default(0)
+  kDraws          Int         @default(0)
+  kLosses         Int         @default(0)
+  kGoalsFor       Int         @default(0)
+  kGoalsAgainst   Int         @default(0)
+  kGoalDifference Int         @default(0)
+  kPoints         Int         @default(0)
 
-  players        Player[]
-  homeMatches    Match[]    @relation("HomeMatches")
-  awayMatches    Match[]    @relation("AwayMatches")
+  group           Group?      @relation(fields: [groupId], references: [id])
+  groupId         Int?
+
+  players         Player[]
+  homeMatches     Match[]     @relation("HomeMatches")
+  awayMatches     Match[]     @relation("AwayMatches")
 }
 
 model Group {
