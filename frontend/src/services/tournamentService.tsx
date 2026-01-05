@@ -16,8 +16,10 @@ export async function fetchUserTournaments() {
   return tournaments;
 }
 
-export async function deleteTournament(tournamentId: number) {
-  await api.delete(`/tournaments/${tournamentId}`);
+export async function deleteTournaments(tournamentIds: number[]) {
+  await api.delete('/tournaments', {
+    params: { ids: tournamentIds.join(', ') }
+  });
 }
 
 // TODO: clean up

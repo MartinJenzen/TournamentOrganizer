@@ -99,58 +99,70 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
-  const tournamentId = parseInt(req.params.id, 10);
+// Delete tournament/s
+router.delete('/', requireAuth, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
+  const tournamentIdsListParameter = req.query.ids;
+
+  const tournamentIds = String(tournamentIdsListParameter ?? '')
+    .split(', ')
+    .map(string => Number(string.trim()))    // Remove fluke white spaces and convert to number
+    .filter(tournamentId => Number.isInteger(tournamentId) && tournamentId > 0);
+
+  if (tournamentIds.length === 0)
+    return res.status(400).json({ error: 'No valid tournament IDs provided!' });
 
   // Verify
-  const existingTournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { ownerId: true }
+  const existingTournaments = await prisma.tournament.findMany({
+    where: { id: { in: tournamentIds } },
+    select: { id: true, ownerId: true }
   });
 
-  if (!existingTournament)
-    return res.status(404).json({ error: 'Tournament not found!' });
+  if (existingTournaments.length !== tournamentIds.length)
+    return res.status(404).json({ error: 'One or more tournaments were not found!' });
 
-  if (existingTournament.ownerId !== userId)
-    return res.status(403).json({ error: 'You do not have permission to delete this tournament!' });
+  const isDeletingWithoutOwnership = existingTournaments.some(tournament => tournament.ownerId !== userId);
+  if (isDeletingWithoutOwnership) 
+    return res.status(403).json({ error: 'You do not have permission to delete one or more tournaments!' });
 
-  // Delete tournament and all related data
+  // Delete tournament/s and all related data
   await prisma.$transaction([
     // MatchEvents
     prisma.matchEvent.deleteMany({
-      where: { match: { tournamentId } }
+      where: { match: { tournamentId: { in: tournamentIds } } }
     }),
     // Matches
     prisma.match.deleteMany({
-      where: { tournamentId }
+      where: { tournamentId: { in: tournamentIds } }
     }),
     // KnockoutTies
     prisma.knockoutTie.deleteMany({
-      where: { tournamentId }
+      where: { tournamentId: { in: tournamentIds } }
     }),
-    // Players (teams)
+    // Players (from teams)
     prisma.player.deleteMany({
-      where: { team: { tournamentId } }
+      where: { team: { tournamentId: { in: tournamentIds } } }
     }),
     // Teams
     prisma.team.deleteMany({
-      where: { tournamentId }
+      where: { tournamentId: { in: tournamentIds } }
     }),
     // Groups
     prisma.group.deleteMany({
-      where: { tournamentId }
+      where: { tournamentId: { in: tournamentIds } }
     }),
-    // Tournament
-    prisma.tournament.delete({
-      where: { id: tournamentId }
+    // Tournament/s
+    prisma.tournament.deleteMany({
+      where: { id: { in: tournamentIds } }
     })
   ]);
+
+  console.log(`Deleted tournament/s with ID: ${tournamentIds.join(', ')}`);
 
   return res.sendStatus(204);
 })
 
-// Get match fixtures
+// Match fixtures retrieval
 router.get('/:id/fixtures', requireAuth, async (req: Request, res: Response) => {
   const tournamentId = parseInt(req.params.id, 10);
 
@@ -177,6 +189,7 @@ router.get('/:id/fixtures', requireAuth, async (req: Request, res: Response) => 
   }
 });
 
+// Match report submission
 router.patch('/:tournamentId/matches/:matchId/report', requireAuth, async (req: Request, res: Response) => {
   const tournamentId = Number(req.params.tournamentId);
   const matchId = Number(req.params.matchId);

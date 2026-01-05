@@ -26,7 +26,9 @@ export interface Tournament {
   stage: string;
   createdAt: string;
   updatedAt: string;
+  status: 'IN_PROGRESS' | 'COMPLETED';
   topTeamsAdvancing: number;
+  knockoutLegs: number;
   teams: Array<{
     id: number;
     name: string;

@@ -189,7 +189,7 @@ export async function generateInitialKnockoutMatchesFromGroups(transaction: Pris
 }
 
 // Pair the one advancing top team from each group sequentially
-async function pairBestTeamFromSequentialGroups(transaction: Prisma.TransactionClient, tournamentId: number, groups: any[], knockoutLegs: number, knockoutRound: KnockoutRound, nextMatchDay: number) {
+export async function pairBestTeamFromSequentialGroups(transaction: Prisma.TransactionClient, tournamentId: number, groups: any[], knockoutLegs: number, knockoutRound: KnockoutRound, nextMatchDay: number) {
   const matches = [];
 
   for (let i = 0; i < groups.length; i += 2) {
@@ -205,6 +205,7 @@ async function pairBestTeamFromSequentialGroups(transaction: Prisma.TransactionC
   return matches;
 }
 
+// TODO: look into whether 'pairMultipleBestTeamsFromGroups' can also be used instead of 'pairBestTeamFromSequentialGroups' for its own purpose
 // Pair best qualified team from group X vs. worst qualified team from group Y, second best vs. second worst, etc., when multiple teams advance from each group
 export async function pairMultipleBestTeamsFromGroups(transaction: Prisma.TransactionClient, tournamentId: number, groups: any[], qualifiedTeamsPerGroupCount: number, knockoutLegs: number, knockoutRound: KnockoutRound, nextMatchDay: number) {
   const matches = [];
@@ -226,7 +227,7 @@ export async function pairMultipleBestTeamsFromGroups(transaction: Prisma.Transa
 }
 
 // Pair best qualified team vs. worst qualified team, second best vs. second worst, etc., when only one group exists and multiple teams advance 
-async function pairAdvancingTeamsFromOneSingleGroup(transaction: Prisma.TransactionClient, tournamentId: number, group: any, qualifiedTeamsCount: number, knockoutLegs: number, knockoutRound: KnockoutRound, nextMatchDay: number) {
+export async function pairAdvancingTeamsFromOneSingleGroup(transaction: Prisma.TransactionClient, tournamentId: number, group: any, qualifiedTeamsCount: number, knockoutLegs: number, knockoutRound: KnockoutRound, nextMatchDay: number) {
   const matches = [];
 
   for (let i = 0; i < qualifiedTeamsCount / 2; i++) {
